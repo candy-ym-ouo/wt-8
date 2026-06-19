@@ -584,6 +584,569 @@
       </div>
     </div>
 
+    <div v-if="currentTab === 'growth'" class="section">
+      <div class="growth-subtabs">
+        <button
+          v-for="t in growthTabs"
+          :key="t.value"
+          :class="['btn', 'btn-sm', growthSubTab === t.value ? 'btn-primary' : 'btn-secondary']"
+          @click="switchGrowthTab(t.value)"
+        >
+          {{ t.icon }} {{ t.label }}
+        </button>
+      </div>
+
+      <div v-if="growthSubTab === 'levels'" class="card mt-lg" style="padding: 24px;">
+        <div class="flex justify-between items-center mb">
+          <h3 class="font-semibold">等级配置</h3>
+          <button class="btn btn-primary btn-sm" @click="openLevelForm()">+ 新增等级</button>
+        </div>
+        <div v-if="loadingLevels" class="empty-state py-8"><div class="empty-state-icon">⏳</div></div>
+        <div v-else-if="levels.length === 0" class="empty-state py-8">
+          <div class="empty-state-icon">📊</div>
+          <div class="empty-state-text text-sm">暂无等级配置</div>
+        </div>
+        <div v-else class="admin-list">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>图标</th>
+                <th>等级</th>
+                <th>名称</th>
+                <th>所需经验</th>
+                <th>权益</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="l in levels" :key="l.id">
+                <td><span class="text-2xl">{{ l.icon || '⭐' }}</span></td>
+                <td class="font-bold">Lv.{{ l.level }}</td>
+                <td class="font-medium">{{ l.name }}</td>
+                <td>{{ l.minExp }}</td>
+                <td class="text-sm text-muted">
+                  {{ (JSON.parse(l.benefits || '[]')).length }} 项权益
+                </td>
+                <td>
+                  <span :class="['badge', l.isActive ? 'badge-approved' : 'badge-rejected']">
+                    {{ l.isActive ? '启用' : '禁用' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" @click="openLevelForm(l)">编辑</button>
+                  <button class="btn btn-ghost btn-sm danger-btn" @click="deleteLevel(l)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div v-if="growthSubTab === 'badges'" class="card mt-lg" style="padding: 24px;">
+        <div class="flex justify-between items-center mb">
+          <h3 class="font-semibold">勋章配置</h3>
+          <button class="btn btn-primary btn-sm" @click="openBadgeForm()">+ 新增勋章</button>
+        </div>
+        <div v-if="loadingBadges" class="empty-state py-8"><div class="empty-state-icon">⏳</div></div>
+        <div v-else-if="badges.length === 0" class="empty-state py-8">
+          <div class="empty-state-icon">🏅</div>
+          <div class="empty-state-text text-sm">暂无勋章配置</div>
+        </div>
+        <div v-else class="badge-grid">
+          <div v-for="b in badges" :key="b.id" class="badge-card card">
+            <div class="badge-card-header">
+              <span class="badge-icon">{{ b.icon }}</span>
+              <span :class="['rarity-badge', `rarity-${b.rarity}`]">{{ rarityLabel(b.rarity) }}</span>
+            </div>
+            <div class="badge-card-title">{{ b.name }}</div>
+            <div class="badge-card-desc text-sm text-muted">{{ b.description }}</div>
+            <div class="badge-card-footer">
+              <span class="text-xs text-tertiary">+{{ b.expReward }} 经验</span>
+              <span :class="['badge', b.isActive ? 'badge-approved' : 'badge-rejected']">
+                {{ b.isActive ? '启用' : '禁用' }}
+              </span>
+            </div>
+            <div class="badge-card-actions">
+              <button class="btn btn-ghost btn-sm" @click="openBadgeForm(b)">编辑</button>
+              <button class="btn btn-ghost btn-sm danger-btn" @click="deleteBadge(b)">删除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="growthSubTab === 'achievements'" class="card mt-lg" style="padding: 24px;">
+        <div class="flex justify-between items-center mb">
+          <h3 class="font-semibold">成就配置</h3>
+          <button class="btn btn-primary btn-sm" @click="openAchievementForm()">+ 新增成就</button>
+        </div>
+        <div v-if="loadingAchievements" class="empty-state py-8"><div class="empty-state-icon">⏳</div></div>
+        <div v-else-if="achievements.length === 0" class="empty-state py-8">
+          <div class="empty-state-icon">🏆</div>
+          <div class="empty-state-text text-sm">暂无成就配置</div>
+        </div>
+        <div v-else class="admin-list">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>分类</th>
+                <th>条件</th>
+                <th>目标值</th>
+                <th>奖励</th>
+                <th>关联勋章</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in achievements" :key="a.id">
+                <td class="font-medium">{{ a.name }}</td>
+                <td><span class="tag">{{ categoryLabel(a.category) }}</span></td>
+                <td class="text-sm text-muted">{{ a.condition }}</td>
+                <td>{{ a.targetValue }}</td>
+                <td>+{{ a.expReward }} 经验</td>
+                <td>
+                  <span v-if="a.badge" class="text-sm">
+                    {{ a.badge.icon }} {{ a.badge.name }}
+                  </span>
+                  <span v-else class="text-sm text-tertiary">-</span>
+                </td>
+                <td>
+                  <span :class="['badge', a.isActive ? 'badge-approved' : 'badge-rejected']">
+                    {{ a.isActive ? '启用' : '禁用' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" @click="openAchievementForm(a)">编辑</button>
+                  <button class="btn btn-ghost btn-sm danger-btn" @click="deleteAchievement(a)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div v-if="growthSubTab === 'tasks'" class="card mt-lg" style="padding: 24px;">
+        <div class="flex justify-between items-center mb">
+          <h3 class="font-semibold">任务配置</h3>
+          <button class="btn btn-primary btn-sm" @click="openTaskForm()">+ 新增任务</button>
+        </div>
+        <div v-if="loadingTasks" class="empty-state py-8"><div class="empty-state-icon">⏳</div></div>
+        <div v-else-if="tasks.length === 0" class="empty-state py-8">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-text text-sm">暂无任务配置</div>
+        </div>
+        <div v-else class="admin-list">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>任务名称</th>
+                <th>类型</th>
+                <th>分类</th>
+                <th>条件</th>
+                <th>目标值</th>
+                <th>奖励</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="t in tasks" :key="t.id">
+                <td class="font-medium">{{ t.name }}</td>
+                <td><span class="tag">{{ taskTypeLabel(t.type) }}</span></td>
+                <td><span class="tag">{{ taskCategoryLabel(t.category) }}</span></td>
+                <td class="text-sm text-muted">{{ t.condition }}</td>
+                <td>{{ t.targetValue }}</td>
+                <td>+{{ t.expReward }} 经验</td>
+                <td>
+                  <span :class="['badge', t.isActive ? 'badge-approved' : 'badge-rejected']">
+                    {{ t.isActive ? '启用' : '禁用' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" @click="openTaskForm(t)">编辑</button>
+                  <button class="btn btn-ghost btn-sm danger-btn" @click="deleteTask(t)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div v-if="growthSubTab === 'benefits'" class="card mt-lg" style="padding: 24px;">
+        <div class="flex justify-between items-center mb">
+          <h3 class="font-semibold">权益配置</h3>
+          <button class="btn btn-primary btn-sm" @click="openBenefitForm()">+ 新增权益</button>
+        </div>
+        <div v-if="loadingBenefits" class="empty-state py-8"><div class="empty-state-icon">⏳</div></div>
+        <div v-else-if="benefits.length === 0" class="empty-state py-8">
+          <div class="empty-state-icon">🎁</div>
+          <div class="empty-state-text text-sm">暂无权益配置</div>
+        </div>
+        <div v-else class="admin-list">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>权益名称</th>
+                <th>类型</th>
+                <th>描述</th>
+                <th>最低等级</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="b in benefits" :key="b.id">
+                <td class="font-medium">{{ b.name }}</td>
+                <td><span class="tag">{{ benefitTypeLabel(b.type) }}</span></td>
+                <td class="text-sm text-muted">{{ b.description }}</td>
+                <td>Lv.{{ b.minLevel }}</td>
+                <td>
+                  <span :class="['badge', b.isActive ? 'badge-approved' : 'badge-rejected']">
+                    {{ b.isActive ? '启用' : '禁用' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" @click="openBenefitForm(b)">编辑</button>
+                  <button class="btn btn-ghost btn-sm danger-btn" @click="deleteBenefit(b)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showLevelForm" class="modal-overlay" @click.self="showLevelForm = false">
+      <div class="modal card" style="max-width: 560px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingLevel ? '编辑等级' : '新增等级' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showLevelForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">等级 <span style="color: var(--danger);">*</span></label>
+              <input v-model.number="levelForm.level" type="number" class="form-input" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">名称 <span style="color: var(--danger);">*</span></label>
+              <input v-model="levelForm.name" type="text" class="form-input" placeholder="例：青铜作者" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">所需经验 <span style="color: var(--danger);">*</span></label>
+              <input v-model.number="levelForm.minExp" type="number" class="form-input" min="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">图标</label>
+              <input v-model="levelForm.icon" type="text" class="form-input" placeholder="例：🥉">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述</label>
+            <textarea v-model="levelForm.description" class="form-textarea" rows="2" placeholder="等级描述..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">权益（每行一项）</label>
+            <textarea v-model="levelForm.benefitsText" class="form-textarea" rows="3" placeholder="例：&#10;优先审核投稿&#10;专属标识"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="levelForm.isActive">
+              <span>启用此等级</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showLevelForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitLevelForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingLevel ? '保存' : '创建') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showBadgeForm" class="modal-overlay" @click.self="showBadgeForm = false">
+      <div class="modal card" style="max-width: 560px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingBadge ? '编辑勋章' : '新增勋章' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showBadgeForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">名称 <span style="color: var(--danger);">*</span></label>
+              <input v-model="badgeForm.name" type="text" class="form-input" placeholder="例：初心作者" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">编码 <span style="color: var(--danger);">*</span></label>
+              <input v-model="badgeForm.code" type="text" class="form-input" placeholder="例：FIRST_SUBMISSION" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">图标 <span style="color: var(--danger);">*</span></label>
+              <input v-model="badgeForm.icon" type="text" class="form-input" placeholder="例：🌟" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">稀有度</label>
+              <select v-model="badgeForm.rarity" class="form-select">
+                <option value="COMMON">普通</option>
+                <option value="UNCOMMON">稀有</option>
+                <option value="RARE">珍贵</option>
+                <option value="EPIC">史诗</option>
+                <option value="LEGENDARY">传说</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">分类</label>
+              <select v-model="badgeForm.category" class="form-select">
+                <option value="GENERAL">通用</option>
+                <option value="CREATION">创作</option>
+                <option value="ACHIEVEMENT">成就</option>
+                <option value="EVENT">活动</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">经验奖励</label>
+              <input v-model.number="badgeForm.expReward" type="number" class="form-input" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述 <span style="color: var(--danger);">*</span></label>
+            <textarea v-model="badgeForm.description" class="form-textarea" rows="2" placeholder="勋章描述..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">排序权重</label>
+            <input v-model.number="badgeForm.sortOrder" type="number" class="form-input" min="0">
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="badgeForm.isActive">
+              <span>启用此勋章</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showBadgeForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitBadgeForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingBadge ? '保存' : '创建') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showAchievementForm" class="modal-overlay" @click.self="showAchievementForm = false">
+      <div class="modal card" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingAchievement ? '编辑成就' : '新增成就' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showAchievementForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">名称 <span style="color: var(--danger);">*</span></label>
+              <input v-model="achievementForm.name" type="text" class="form-input" placeholder="例：高产作家" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">编码 <span style="color: var(--danger);">*</span></label>
+              <input v-model="achievementForm.code" type="text" class="form-input" placeholder="例：HIGH_PRODUCTION" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">分类</label>
+              <select v-model="achievementForm.category" class="form-select">
+                <option value="CREATION">创作</option>
+                <option value="ENGAGEMENT">互动</option>
+                <option value="COLLECTION">收集</option>
+                <option value="SOCIAL">社交</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">关联勋章</label>
+              <select v-model="achievementForm.badgeId" class="form-select">
+                <option :value="null">无</option>
+                <option v-for="b in badges" :key="b.id" :value="b.id">{{ b.icon }} {{ b.name }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">条件描述 <span style="color: var(--danger);">*</span></label>
+            <input v-model="achievementForm.condition" type="text" class="form-input" placeholder="例：累计发布 10 篇作品" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">目标值</label>
+              <input v-model.number="achievementForm.targetValue" type="number" class="form-input" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">经验奖励</label>
+              <input v-model.number="achievementForm.expReward" type="number" class="form-input" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述 <span style="color: var(--danger);">*</span></label>
+            <textarea v-model="achievementForm.description" class="form-textarea" rows="2" placeholder="成就描述..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">排序权重</label>
+            <input v-model.number="achievementForm.sortOrder" type="number" class="form-input" min="0">
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="achievementForm.isActive">
+              <span>启用此成就</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showAchievementForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitAchievementForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingAchievement ? '保存' : '创建') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showTaskForm" class="modal-overlay" @click.self="showTaskForm = false">
+      <div class="modal card" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingTask ? '编辑任务' : '新增任务' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showTaskForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">名称 <span style="color: var(--danger);">*</span></label>
+              <input v-model="taskForm.name" type="text" class="form-input" placeholder="例：每日投稿" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">编码 <span style="color: var(--danger);">*</span></label>
+              <input v-model="taskForm.code" type="text" class="form-input" placeholder="例：DAILY_SUBMISSION" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">分类</label>
+              <select v-model="taskForm.category" class="form-select">
+                <option value="DAILY">每日任务</option>
+                <option value="WEEKLY">每周任务</option>
+                <option value="MONTHLY">每月任务</option>
+                <option value="SPECIAL">特殊任务</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">类型</label>
+              <select v-model="taskForm.type" class="form-select">
+                <option value="SUBMISSION">投稿</option>
+                <option value="VIEW">浏览</option>
+                <option value="LIKE">点赞</option>
+                <option value="COMMENT">评论</option>
+                <option value="SHARE">分享</option>
+                <option value="LOGIN">登录</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">条件描述 <span style="color: var(--danger);">*</span></label>
+            <input v-model="taskForm.condition" type="text" class="form-input" placeholder="例：发布 1 篇作品" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">目标值</label>
+              <input v-model.number="taskForm.targetValue" type="number" class="form-input" min="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">经验奖励</label>
+              <input v-model.number="taskForm.expReward" type="number" class="form-input" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述 <span style="color: var(--danger);">*</span></label>
+            <textarea v-model="taskForm.description" class="form-textarea" rows="2" placeholder="任务描述..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">排序权重</label>
+            <input v-model.number="taskForm.sortOrder" type="number" class="form-input" min="0">
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="taskForm.isActive">
+              <span>启用此任务</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showTaskForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitTaskForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingTask ? '保存' : '创建') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showBenefitForm" class="modal-overlay" @click.self="showBenefitForm = false">
+      <div class="modal card" style="max-width: 560px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingBenefit ? '编辑权益' : '新增权益' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showBenefitForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">名称 <span style="color: var(--danger);">*</span></label>
+              <input v-model="benefitForm.name" type="text" class="form-input" placeholder="例：优先审核" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">编码 <span style="color: var(--danger);">*</span></label>
+              <input v-model="benefitForm.code" type="text" class="form-input" placeholder="例：PRIORITY_REVIEW" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">类型</label>
+              <select v-model="benefitForm.type" class="form-select">
+                <option value="PRIVILEGE">特权</option>
+                <option value="DISCOUNT">折扣</option>
+                <option value="REWARD">奖励</option>
+                <option value="FEATURE">功能</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">最低等级</label>
+              <input v-model.number="benefitForm.minLevel" type="number" class="form-input" min="1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">权益值（可选）</label>
+            <input v-model="benefitForm.value" type="text" class="form-input" placeholder="例：50% 折扣">
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述 <span style="color: var(--danger);">*</span></label>
+            <textarea v-model="benefitForm.description" class="form-textarea" rows="2" placeholder="权益描述..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="benefitForm.isActive">
+              <span>启用此权益</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showBenefitForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitBenefitForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingBenefit ? '保存' : '创建') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="showReject" class="modal-overlay" @click.self="showReject = false">
       <div class="modal card" style="max-width: 460px;">
         <div class="modal-header">
@@ -623,7 +1186,8 @@ const tabs = [
   { label: '排期管理', value: 'schedules', icon: '📅' },
   { label: '首页曝光', value: 'featured', icon: '🔥' },
   { label: '刊物管理', value: 'zines', icon: '📚' },
-  { label: '用户管理', value: 'users', icon: '👥' }
+  { label: '用户管理', value: 'users', icon: '👥' },
+  { label: '成长规则', value: 'growth', icon: '⭐' }
 ]
 
 const subFilters = [
@@ -678,6 +1242,43 @@ const topicForm = ref({ title: '', description: '', content: '', category: '文�
 const scheduleForm = ref({ topicId: null, title: '', publishDate: '', description: '' })
 const featuredForm = ref({ topicId: null, bannerImage: '', bannerTitle: '', bannerSubtitle: '', sortOrder: 0 })
 
+const growthTabs = [
+  { label: '等级', value: 'levels', icon: '📊' },
+  { label: '勋章', value: 'badges', icon: '🏅' },
+  { label: '成就', value: 'achievements', icon: '🏆' },
+  { label: '任务', value: 'tasks', icon: '📋' },
+  { label: '权益', value: 'benefits', icon: '🎁' }
+]
+
+const growthSubTab = ref('levels')
+const levels = ref([])
+const badges = ref([])
+const achievements = ref([])
+const tasks = ref([])
+const benefits = ref([])
+const loadingLevels = ref(false)
+const loadingBadges = ref(false)
+const loadingAchievements = ref(false)
+const loadingTasks = ref(false)
+const loadingBenefits = ref(false)
+
+const showLevelForm = ref(false)
+const showBadgeForm = ref(false)
+const showAchievementForm = ref(false)
+const showTaskForm = ref(false)
+const showBenefitForm = ref(false)
+const editingLevel = ref(null)
+const editingBadge = ref(null)
+const editingAchievement = ref(null)
+const editingTask = ref(null)
+const editingBenefit = ref(null)
+
+const levelForm = ref({ level: 1, name: '', minExp: 0, icon: '', description: '', benefitsText: '', isActive: true })
+const badgeForm = ref({ name: '', code: '', icon: '', description: '', category: 'GENERAL', rarity: 'COMMON', expReward: 0, sortOrder: 0, isActive: true })
+const achievementForm = ref({ name: '', code: '', description: '', category: 'CREATION', condition: '', targetValue: 1, expReward: 0, badgeId: null, sortOrder: 0, isActive: true })
+const taskForm = ref({ name: '', code: '', description: '', category: 'DAILY', type: 'SUBMISSION', condition: '', targetValue: 1, expReward: 10, sortOrder: 0, isActive: true })
+const benefitForm = ref({ name: '', code: '', description: '', type: 'PRIVILEGE', value: '', minLevel: 1, isActive: true })
+
 const statList = computed(() => [
   { label: '用户总数', value: stats.value.totalUsers || 0, icon: '👥', color: '#3b82f6' },
   { label: '刊物总数', value: stats.value.totalZines || 0, icon: '📚', color: '#8b5cf6' },
@@ -714,6 +1315,330 @@ const switchTab = (tab) => {
   if (tab === 'topicSubs') loadTopicSubs()
   if (tab === 'schedules') loadSchedules()
   if (tab === 'featured') loadFeatured()
+  if (tab === 'growth') switchGrowthTab(growthSubTab.value)
+}
+
+const switchGrowthTab = (tab) => {
+  growthSubTab.value = tab
+  if (tab === 'levels') loadLevels()
+  if (tab === 'badges') loadBadges()
+  if (tab === 'achievements') loadAchievements()
+  if (tab === 'tasks') loadTasks()
+  if (tab === 'benefits') loadBenefits()
+}
+
+const rarityLabel = (r) => ({
+  COMMON: '普通',
+  UNCOMMON: '稀有',
+  RARE: '珍贵',
+  EPIC: '史诗',
+  LEGENDARY: '传说'
+}[r] || r)
+
+const categoryLabel = (c) => ({
+  CREATION: '创作',
+  ENGAGEMENT: '互动',
+  COLLECTION: '收集',
+  SOCIAL: '社交'
+}[c] || c)
+
+const taskTypeLabel = (t) => ({
+  SUBMISSION: '投稿',
+  VIEW: '浏览',
+  LIKE: '点赞',
+  COMMENT: '评论',
+  SHARE: '分享',
+  LOGIN: '登录'
+}[t] || t)
+
+const taskCategoryLabel = (c) => ({
+  DAILY: '每日',
+  WEEKLY: '每周',
+  MONTHLY: '每月',
+  SPECIAL: '特殊'
+}[c] || c)
+
+const benefitTypeLabel = (t) => ({
+  PRIVILEGE: '特权',
+  DISCOUNT: '折扣',
+  REWARD: '奖励',
+  FEATURE: '功能'
+}[t] || t)
+
+const loadLevels = async () => {
+  loadingLevels.value = true
+  try {
+    const res = await api.get('/admin/growth/levels')
+    levels.value = res.levels
+  } catch (e) {}
+  finally { loadingLevels.value = false }
+}
+
+const loadBadges = async () => {
+  loadingBadges.value = true
+  try {
+    const res = await api.get('/admin/growth/badges')
+    badges.value = res.badges
+  } catch (e) {}
+  finally { loadingBadges.value = false }
+}
+
+const loadAchievements = async () => {
+  loadingAchievements.value = true
+  try {
+    const res = await api.get('/admin/growth/achievements')
+    achievements.value = res.achievements
+  } catch (e) {}
+  finally { loadingAchievements.value = false }
+}
+
+const loadTasks = async () => {
+  loadingTasks.value = true
+  try {
+    const res = await api.get('/admin/growth/tasks')
+    tasks.value = res.tasks
+  } catch (e) {}
+  finally { loadingTasks.value = false }
+}
+
+const loadBenefits = async () => {
+  loadingBenefits.value = true
+  try {
+    const res = await api.get('/admin/growth/benefits')
+    benefits.value = res.benefits
+  } catch (e) {}
+  finally { loadingBenefits.value = false }
+}
+
+const openLevelForm = (level = null) => {
+  editingLevel.value = level
+  if (level) {
+    levelForm.value = {
+      level: level.level,
+      name: level.name,
+      minExp: level.minExp,
+      icon: level.icon || '',
+      description: level.description || '',
+      benefitsText: (JSON.parse(level.benefits || '[]')).join('\n'),
+      isActive: level.isActive
+    }
+  } else {
+    levelForm.value = { level: 1, name: '', minExp: 0, icon: '', description: '', benefitsText: '', isActive: true }
+  }
+  showLevelForm.value = true
+}
+
+const submitLevelForm = async () => {
+  if (!levelForm.value.name || !levelForm.value.level || levelForm.value.minExp === undefined) {
+    showToast('请填写必填项', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    const benefits = levelForm.value.benefitsText.split('\n').map(s => s.trim()).filter(Boolean)
+    const data = { ...levelForm.value, benefits }
+    if (editingLevel.value) {
+      await api.put(`/admin/growth/levels/${editingLevel.value.id}`, data)
+      showToast('等级更新成功', 'success')
+    } else {
+      await api.post('/admin/growth/levels', data)
+      showToast('等级创建成功', 'success')
+    }
+    showLevelForm.value = false
+    loadLevels()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteLevel = async (level) => {
+  if (!confirm(`确定删除等级「${level.name}」？`)) return
+  try {
+    await api.delete(`/admin/growth/levels/${level.id}`)
+    showToast('已删除', 'success')
+    loadLevels()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
+}
+
+const openBadgeForm = (badge = null) => {
+  editingBadge.value = badge
+  if (badge) {
+    badgeForm.value = { ...badge }
+  } else {
+    badgeForm.value = { name: '', code: '', icon: '', description: '', category: 'GENERAL', rarity: 'COMMON', expReward: 0, sortOrder: 0, isActive: true }
+  }
+  showBadgeForm.value = true
+}
+
+const submitBadgeForm = async () => {
+  if (!badgeForm.value.name || !badgeForm.value.code || !badgeForm.value.icon || !badgeForm.value.description) {
+    showToast('请填写必填项', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    if (editingBadge.value) {
+      await api.put(`/admin/growth/badges/${editingBadge.value.id}`, badgeForm.value)
+      showToast('勋章更新成功', 'success')
+    } else {
+      await api.post('/admin/growth/badges', badgeForm.value)
+      showToast('勋章创建成功', 'success')
+    }
+    showBadgeForm.value = false
+    loadBadges()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteBadge = async (badge) => {
+  if (!confirm(`确定删除勋章「${badge.name}」？`)) return
+  try {
+    await api.delete(`/admin/growth/badges/${badge.id}`)
+    showToast('已删除', 'success')
+    loadBadges()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
+}
+
+const openAchievementForm = (achievement = null) => {
+  editingAchievement.value = achievement
+  if (achievement) {
+    achievementForm.value = { ...achievement }
+  } else {
+    achievementForm.value = { name: '', code: '', description: '', category: 'CREATION', condition: '', targetValue: 1, expReward: 0, badgeId: null, sortOrder: 0, isActive: true }
+  }
+  if (badges.value.length === 0) loadBadges()
+  showAchievementForm.value = true
+}
+
+const submitAchievementForm = async () => {
+  if (!achievementForm.value.name || !achievementForm.value.code || !achievementForm.value.description || !achievementForm.value.condition) {
+    showToast('请填写必填项', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    if (editingAchievement.value) {
+      await api.put(`/admin/growth/achievements/${editingAchievement.value.id}`, achievementForm.value)
+      showToast('成就更新成功', 'success')
+    } else {
+      await api.post('/admin/growth/achievements', achievementForm.value)
+      showToast('成就创建成功', 'success')
+    }
+    showAchievementForm.value = false
+    loadAchievements()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteAchievement = async (achievement) => {
+  if (!confirm(`确定删除成就「${achievement.name}」？`)) return
+  try {
+    await api.delete(`/admin/growth/achievements/${achievement.id}`)
+    showToast('已删除', 'success')
+    loadAchievements()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
+}
+
+const openTaskForm = (task = null) => {
+  editingTask.value = task
+  if (task) {
+    taskForm.value = { ...task }
+  } else {
+    taskForm.value = { name: '', code: '', description: '', category: 'DAILY', type: 'SUBMISSION', condition: '', targetValue: 1, expReward: 10, sortOrder: 0, isActive: true }
+  }
+  showTaskForm.value = true
+}
+
+const submitTaskForm = async () => {
+  if (!taskForm.value.name || !taskForm.value.code || !taskForm.value.description || !taskForm.value.condition) {
+    showToast('请填写必填项', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    if (editingTask.value) {
+      await api.put(`/admin/growth/tasks/${editingTask.value.id}`, taskForm.value)
+      showToast('任务更新成功', 'success')
+    } else {
+      await api.post('/admin/growth/tasks', taskForm.value)
+      showToast('任务创建成功', 'success')
+    }
+    showTaskForm.value = false
+    loadTasks()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteTask = async (task) => {
+  if (!confirm(`确定删除任务「${task.name}」？`)) return
+  try {
+    await api.delete(`/admin/growth/tasks/${task.id}`)
+    showToast('已删除', 'success')
+    loadTasks()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
+}
+
+const openBenefitForm = (benefit = null) => {
+  editingBenefit.value = benefit
+  if (benefit) {
+    benefitForm.value = { ...benefit }
+  } else {
+    benefitForm.value = { name: '', code: '', description: '', type: 'PRIVILEGE', value: '', minLevel: 1, isActive: true }
+  }
+  showBenefitForm.value = true
+}
+
+const submitBenefitForm = async () => {
+  if (!benefitForm.value.name || !benefitForm.value.code || !benefitForm.value.description) {
+    showToast('请填写必填项', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    if (editingBenefit.value) {
+      await api.put(`/admin/growth/benefits/${editingBenefit.value.id}`, benefitForm.value)
+      showToast('权益更新成功', 'success')
+    } else {
+      await api.post('/admin/growth/benefits', benefitForm.value)
+      showToast('权益创建成功', 'success')
+    }
+    showBenefitForm.value = false
+    loadBenefits()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteBenefit = async (benefit) => {
+  if (!confirm(`确定删除权益「${benefit.name}」？`)) return
+  try {
+    await api.delete(`/admin/growth/benefits/${benefit.id}`)
+    showToast('已删除', 'success')
+    loadBenefits()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
 }
 
 const loadOverview = async () => {
@@ -1273,5 +2198,93 @@ onMounted(() => loadOverview())
   gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid var(--border-light);
+}
+
+.growth-subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.badge-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.badge-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.badge-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.badge-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.rarity-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.rarity-COMMON { background: #e5e7eb; color: #374151; }
+.rarity-UNCOMMON { background: #d1fae5; color: #065f46; }
+.rarity-RARE { background: #dbeafe; color: #1e40af; }
+.rarity-EPIC { background: #f3e8ff; color: #6b21a8; }
+.rarity-LEGENDARY { background: #fef3c7; color: #92400e; }
+
+.badge-card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.badge-card-desc {
+  flex: 1;
+  line-height: 1.5;
+}
+
+.badge-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.badge-card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 </style>

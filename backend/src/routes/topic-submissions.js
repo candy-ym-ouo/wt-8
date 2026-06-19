@@ -13,6 +13,8 @@ const formatSubmission = (s) => {
   return { ...s, images: parseJSONField(s.images, []) };
 };
 
+const { triggerGrowthEvent } = require('../utils/growthTrigger');
+
 async function routes(fastify, options) {
   const { prisma } = fastify;
 
@@ -125,6 +127,10 @@ async function routes(fastify, options) {
       }
     });
 
+    await triggerGrowthEvent(prisma, request.user.id, 'TOPIC_SUBMISSION_CREATED', {
+      sourceId: submission.id
+    });
+
     return { submission: formatSubmission(submission), message: '投稿成功，等待审核' };
   });
 
@@ -225,6 +231,10 @@ async function routes(fastify, options) {
           content: `恭喜！您在《${submission.topic.title}》的投稿《${submission.title}》已通过审核${scheduleId ? '并已排期发布' : ''}。感谢您的创作！`,
           type: 'TOPIC'
         }
+      });
+
+      await triggerGrowthEvent(prisma, submission.userId, 'SUBMISSION_APPROVED', {
+        sourceId: submission.id
       });
 
       return { submission: formatSubmission(updated), message: '审核通过' };

@@ -27,6 +27,8 @@ model User {
   topicSubmissions TopicSubmission[]
   reviewedTopicSubmissions TopicSubmission[] @relation("TopicSubmissionReviewer")
   createdSchedules TopicSchedule[]
+  growth      UserGrowth?
+  benefits    UserBenefit[]
 }
 
 model Zine {
@@ -178,4 +180,179 @@ model FeaturedTopic {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model Level {
+  id          Int          @id @default(autoincrement())
+  name        String
+  level       Int          @unique
+  minExp      Int          @unique
+  icon        String?
+  description String?
+  benefits    String       @default("[]")
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userGrowths UserGrowth[]
+}
+
+model Badge {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  code          String         @unique
+  icon          String
+  description   String
+  category      String         @default("GENERAL")
+  rarity        String         @default("COMMON")
+  expReward     Int            @default(0)
+  isActive      Boolean        @default(true)
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  userBadges    UserBadge[]
+  achievements  Achievement[]
+}
+
+model Achievement {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  code        String   @unique
+  description String
+  category    String   @default("CREATION")
+  condition   String
+  targetValue Int      @default(1)
+  expReward   Int      @default(0)
+  badgeId     Int?
+  badge       Badge?   @relation(fields: [badgeId], references: [id])
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userAchievements UserAchievement[]
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  description String
+  category    String   @default("DAILY")
+  type        String   @default("SUBMISSION")
+  condition   String
+  targetValue Int      @default(1)
+  expReward   Int      @default(10)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userTasks   UserTask[]
+}
+
+model Benefit {
+  id          Int           @id @default(autoincrement())
+  name        String
+  code        String        @unique
+  description String
+  type        String        @default("PRIVILEGE")
+  value       String?
+  minLevel    Int           @default(1)
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  userBenefits UserBenefit[]
+}
+
+model UserGrowth {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  totalExp    Int      @default(0)
+  currentExp  Int      @default(0)
+  levelId     Int?
+  level       Level?   @relation(fields: [levelId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userBadges      UserBadge[]
+  userAchievements UserAchievement[]
+  userTasks       UserTask[]
+  growthLogs      GrowthLog[]
+}
+
+model UserBadge {
+  id          Int      @id @default(autoincrement())
+  userGrowthId Int
+  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
+  badgeId     Int
+  badge       Badge    @relation(fields: [badgeId], references: [id])
+  unlockedAt  DateTime @default(now())
+  source      String?
+
+  @@unique([userGrowthId, badgeId])
+}
+
+model UserAchievement {
+  id          Int      @id @default(autoincrement())
+  userGrowthId Int
+  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
+  achievementId Int
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+  progress    Int      @default(0)
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  claimedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userGrowthId, achievementId])
+}
+
+model UserTask {
+  id          Int      @id @default(autoincrement())
+  userGrowthId Int
+  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
+  taskId      Int
+  task        Task     @relation(fields: [taskId], references: [id])
+  progress    Int      @default(0)
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  claimedAt   DateTime?
+  date        String
+  week        String?
+  month       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userGrowthId, taskId, date])
+}
+
+model GrowthLog {
+  id          Int      @id @default(autoincrement())
+  userGrowthId Int
+  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
+  type        String
+  amount      Int      @default(0)
+  description String
+  sourceType  String?
+  sourceId    Int?
+  createdAt   DateTime @default(now())
+}
+
+model UserBenefit {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  benefitId   Int
+  benefit     Benefit  @relation(fields: [benefitId], references: [id])
+  isActive    Boolean  @default(true)
+  activatedAt DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@unique([userId, benefitId])
 }

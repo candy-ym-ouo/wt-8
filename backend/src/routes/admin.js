@@ -8,6 +8,8 @@ function parseJSONField(value, defaultValue) {
   }
 }
 
+const { triggerGrowthEvent } = require('../utils/growthTrigger');
+
 async function routes(fastify, options) {
   const { prisma } = fastify;
 
@@ -104,6 +106,13 @@ async function routes(fastify, options) {
         content: `恭喜！您的投稿《${submission.title}》已通过审核并发布。感谢您的创作！`,
         type: 'SYSTEM'
       }
+    });
+
+    await triggerGrowthEvent(prisma, submission.userId, 'SUBMISSION_APPROVED', {
+      sourceId: zine.id
+    });
+    await triggerGrowthEvent(prisma, submission.userId, 'ZINE_CREATED', {
+      sourceId: zine.id
     });
 
     return { zine: formatZine(zine), message: '审核通过，已发布' };

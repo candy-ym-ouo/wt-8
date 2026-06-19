@@ -8,6 +8,8 @@ function parseJSONField(value, defaultValue) {
   }
 }
 
+const { triggerGrowthEvent } = require('../utils/growthTrigger');
+
 async function routes(fastify, options) {
   const { prisma } = fastify;
 
@@ -61,6 +63,10 @@ async function routes(fastify, options) {
         content: `您的投稿《${title}》已提交，等待编辑审核。我们会尽快处理并通知您结果。`,
         type: 'SYSTEM'
       }
+    });
+
+    await triggerGrowthEvent(prisma, request.user.id, 'SUBMISSION_CREATED', {
+      sourceId: submission.id
     });
 
     return { submission: formatSub(submission), message: '投稿成功，等待审核' };

@@ -17,6 +17,8 @@ const formatTopic = (t) => {
   };
 };
 
+const { triggerGrowthEvent } = require('../utils/growthTrigger');
+
 async function routes(fastify, options) {
   const { prisma } = fastify;
 
@@ -110,6 +112,10 @@ async function routes(fastify, options) {
         creatorId: request.user.id,
         reviewers: JSON.stringify(reviewers)
       }
+    });
+
+    await triggerGrowthEvent(prisma, request.user.id, 'TOPIC_CREATED', {
+      sourceId: topic.id
     });
 
     return { topic: formatTopic(topic), message: '征稿专题创建成功' };

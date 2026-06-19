@@ -1,3 +1,5 @@
+const { triggerGrowthEvent } = require('../utils/growthTrigger');
+
 async function routes(fastify, options) {
   const { prisma } = fastify;
 
@@ -53,6 +55,10 @@ async function routes(fastify, options) {
         content: `您已成功订阅《${zine.title}》，我们会在有更新时第一时间通知您。`,
         type: 'SYSTEM'
       }
+    });
+
+    await triggerGrowthEvent(prisma, zine.authorId, 'SUBSCRIPTION_GAINED', {
+      sourceId: zine.id
     });
 
     return { subscription, message: '订阅成功' };

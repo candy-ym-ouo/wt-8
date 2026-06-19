@@ -250,6 +250,125 @@ async function main() {
   }
   console.log(`✅ ${messageData.length} 条消息已创建`);
 
+  const levelData = [
+    { level: 1, name: '萌芽作者', minExp: 0, icon: '🌱', description: '刚刚踏入创作世界的新人', benefits: JSON.stringify(['基础投稿权限', '社区互动权限']) },
+    { level: 2, name: '成长作者', minExp: 100, icon: '🌿', description: '开始崭露头角的创作者', benefits: JSON.stringify(['基础投稿权限', '社区互动权限', '优先审核（12小时内）']) },
+    { level: 3, name: '新锐作者', minExp: 300, icon: '🌳', description: '拥有一定读者群的创作者', benefits: JSON.stringify(['基础投稿权限', '社区互动权限', '优先审核（12小时内）', '首页推荐机会', '专属身份标识']) },
+    { level: 4, name: '优秀作者', minExp: 800, icon: '⭐', description: '持续输出优质内容的创作者', benefits: JSON.stringify(['基础投稿权限', '社区互动权限', '优先审核（6小时内）', '首页推荐机会', '专属身份标识', '专题申请绿色通道']) },
+    { level: 5, name: '资深作者', minExp: 2000, icon: '🌟', description: '平台核心创作者', benefits: JSON.stringify(['基础投稿权限', '社区互动权限', '优先审核（6小时内）', '首页推荐机会', '专属身份标识', '专题申请绿色通道', '专属运营对接', '线下活动邀请']) },
+    { level: 6, name: '明星作者', minExp: 5000, icon: '💫', description: '拥有广泛影响力的创作者', benefits: JSON.stringify(['基础投稿权限', '社区互动权限', '优先审核（2小时内）', '首页推荐机会', '专属身份标识', '专题申请绿色通道', '专属运营对接', '线下活动邀请', '合作品牌对接', '收益分成提升']) },
+    { level: 7, name: '传奇作者', minExp: 15000, icon: '👑', description: '平台顶级创作者，传奇般的存在', benefits: JSON.stringify(['全部权限', '优先审核（2小时内）', '首页固定推荐位', '专属身份标识', '专题申请绿色通道', '专属运营对接', '线下活动邀请', '合作品牌对接', '收益分成提升', '定制化权益']) }
+  ];
+
+  for (const l of levelData) {
+    await prisma.level.upsert({
+      where: { level: l.level },
+      update: l,
+      create: l
+    });
+  }
+  console.log(`✅ ${levelData.length} 个等级已创建`);
+
+  const badgeData = [
+    { name: '初心作者', code: 'FIRST_SUBMISSION', icon: '🌟', description: '完成第一次投稿', category: 'CREATION', rarity: 'COMMON', expReward: 10, sortOrder: 1 },
+    { name: '笔耕不辍', code: 'TEN_SUBMISSIONS', icon: '📝', description: '累计发布 10 篇作品', category: 'CREATION', rarity: 'UNCOMMON', expReward: 50, sortOrder: 2 },
+    { name: '高产作家', code: 'FIFTY_SUBMISSIONS', icon: '✍️', description: '累计发布 50 篇作品', category: 'CREATION', rarity: 'RARE', expReward: 200, sortOrder: 3 },
+    { name: '著作等身', code: 'HUNDRED_SUBMISSIONS', icon: '📚', description: '累计发布 100 篇作品', category: 'CREATION', rarity: 'EPIC', expReward: 500, sortOrder: 4 },
+    { name: '初露锋芒', code: 'FIRST_PUBLISHED', icon: '✨', description: '第一篇作品通过审核发布', category: 'ACHIEVEMENT', rarity: 'COMMON', expReward: 20, sortOrder: 5 },
+    { name: '万人瞩目', code: 'TEN_THOUSAND_VIEWS', icon: '👁️', description: '作品累计获得 10000 次浏览', category: 'ENGAGEMENT', rarity: 'UNCOMMON', expReward: 100, sortOrder: 6 },
+    { name: '收获满仓', code: 'HUNDRED_LIKES', icon: '❤️', description: '作品累计获得 100 个点赞', category: 'ENGAGEMENT', rarity: 'COMMON', expReward: 30, sortOrder: 7 },
+    { name: '忠实读者', code: 'THIRTY_DAYS_LOGIN', icon: '📅', description: '连续登录 30 天', category: 'GENERAL', rarity: 'RARE', expReward: 150, sortOrder: 8 },
+    { name: '社区活跃者', code: 'FIFTY_COMMENTS', icon: '💬', description: '累计发布 50 条评论', category: 'ENGAGEMENT', rarity: 'UNCOMMON', expReward: 50, sortOrder: 9 },
+    { name: '伯乐之眼', code: 'HUNDRED_SUBSCRIPTIONS', icon: '🔔', description: '累计订阅 100 本刊物', category: 'SOCIAL', rarity: 'RARE', expReward: 100, sortOrder: 10 },
+    { name: '周年纪念', code: 'ONE_YEAR_ANNIVERSARY', icon: '🎂', description: '注册满一周年', category: 'EVENT', rarity: 'EPIC', expReward: 365, sortOrder: 11 },
+    { name: '传奇创作者', code: 'LEGEND_CREATOR', icon: '🏆', description: '达到传奇作者等级', category: 'ACHIEVEMENT', rarity: 'LEGENDARY', expReward: 1000, sortOrder: 12 }
+  ];
+
+  for (const b of badgeData) {
+    await prisma.badge.upsert({
+      where: { code: b.code },
+      update: b,
+      create: b
+    });
+  }
+  console.log(`✅ ${badgeData.length} 个勋章已创建`);
+
+  const achievementData = [
+    { name: '迈出第一步', code: 'FIRST_STEP', description: '完成第一次投稿', category: 'CREATION', condition: '累计发布 1 篇作品', targetValue: 1, expReward: 20, sortOrder: 1 },
+    { name: '小试牛刀', code: 'FIVE_WORKS', description: '累计发布 5 篇作品', category: 'CREATION', condition: '累计发布 5 篇作品', targetValue: 5, expReward: 50, sortOrder: 2 },
+    { name: '渐入佳境', code: 'TWENTY_WORKS', description: '累计发布 20 篇作品', category: 'CREATION', condition: '累计发布 20 篇作品', targetValue: 20, expReward: 150, sortOrder: 3 },
+    { name: '创作达人', code: 'CREATION_MASTER', description: '累计发布 100 篇作品', category: 'CREATION', condition: '累计发布 100 篇作品', targetValue: 100, expReward: 500, sortOrder: 4 },
+    { name: '人气新星', code: 'POPULAR_NEWSTAR', description: '作品累计获得 1000 次浏览', category: 'ENGAGEMENT', condition: '作品累计浏览量达到 1000', targetValue: 1000, expReward: 100, sortOrder: 5 },
+    { name: '深受喜爱', code: 'WELL_LOVED', description: '作品累计获得 500 个点赞', category: 'ENGAGEMENT', condition: '作品累计点赞数达到 500', targetValue: 500, expReward: 200, sortOrder: 6 },
+    { name: '社交达人', code: 'SOCIAL_DARLING', description: '关注用户达到 50 人', category: 'SOCIAL', condition: '关注数达到 50', targetValue: 50, expReward: 80, sortOrder: 7 },
+    { name: '坚持不懈', code: 'PERSISTENCE', description: '连续 7 天发布作品', category: 'CREATION', condition: '连续 7 天发布作品', targetValue: 7, expReward: 100, sortOrder: 8 }
+  ];
+
+  for (const a of achievementData) {
+    await prisma.achievement.upsert({
+      where: { code: a.code },
+      update: a,
+      create: a
+    });
+  }
+  console.log(`✅ ${achievementData.length} 个成就已创建`);
+
+  const taskData = [
+    { name: '每日签到', code: 'DAILY_LOGIN', description: '每日登录获得奖励', category: 'DAILY', type: 'LOGIN', condition: '每日登录 1 次', targetValue: 1, expReward: 5, sortOrder: 1 },
+    { name: '每日投稿', code: 'DAILY_SUBMISSION', description: '每日发布 1 篇作品', category: 'DAILY', type: 'SUBMISSION', condition: '每日发布 1 篇作品', targetValue: 1, expReward: 20, sortOrder: 2 },
+    { name: '每日浏览', code: 'DAILY_VIEW', description: '每日浏览 5 篇作品', category: 'DAILY', type: 'VIEW', condition: '每日浏览 5 篇作品', targetValue: 5, expReward: 10, sortOrder: 3 },
+    { name: '每日互动', code: 'DAILY_LIKE', description: '每日点赞 3 篇作品', category: 'DAILY', type: 'LIKE', condition: '每日点赞 3 篇作品', targetValue: 3, expReward: 8, sortOrder: 4 },
+    { name: '每周创作', code: 'WEEKLY_CREATION', description: '每周发布 3 篇作品', category: 'WEEKLY', type: 'SUBMISSION', condition: '每周发布 3 篇作品', targetValue: 3, expReward: 80, sortOrder: 5 },
+    { name: '每周阅读', code: 'WEEKLY_READING', description: '每周浏览 20 篇作品', category: 'WEEKLY', type: 'VIEW', condition: '每周浏览 20 篇作品', targetValue: 20, expReward: 50, sortOrder: 6 },
+    { name: '每月佳作', code: 'MONTHLY_MASTERPIECE', description: '每月有 1 篇作品通过审核', category: 'MONTHLY', type: 'SUBMISSION', condition: '每月有 1 篇作品通过审核', targetValue: 1, expReward: 150, sortOrder: 7 }
+  ];
+
+  for (const t of taskData) {
+    await prisma.task.upsert({
+      where: { code: t.code },
+      update: t,
+      create: t
+    });
+  }
+  console.log(`✅ ${taskData.length} 个任务已创建`);
+
+  const benefitData = [
+    { name: '基础投稿权限', code: 'BASIC_SUBMISSION', description: '可以向平台投稿作品', type: 'PRIVILEGE', minLevel: 1, sortOrder: 1 },
+    { name: '社区互动权限', code: 'COMMUNITY_INTERACTION', description: '可以点赞、评论、分享作品', type: 'PRIVILEGE', minLevel: 1, sortOrder: 2 },
+    { name: '优先审核', code: 'PRIORITY_REVIEW_12H', description: '投稿作品 12 小时内审核', type: 'PRIVILEGE', minLevel: 2, sortOrder: 3 },
+    { name: '首页推荐机会', code: 'HOME_FEATURE', description: '作品有机会获得首页推荐', type: 'FEATURE', minLevel: 3, sortOrder: 4 },
+    { name: '专属身份标识', code: 'EXCLUSIVE_BADGE', description: '个人主页显示专属等级标识', type: 'FEATURE', minLevel: 3, sortOrder: 5 },
+    { name: '专题申请绿色通道', code: 'TOPIC_FAST_TRACK', description: '申请专题可获得快速审核', type: 'PRIVILEGE', minLevel: 4, sortOrder: 6 },
+    { name: '专属运营对接', code: 'DEDICATED_OPERATOR', description: '获得专属运营人员对接服务', type: 'PRIVILEGE', minLevel: 5, sortOrder: 7 },
+    { name: '线下活动邀请', code: 'OFFLINE_EVENT', description: '优先获得平台线下活动邀请', type: 'REWARD', minLevel: 5, sortOrder: 8 },
+    { name: '合作品牌对接', code: 'BRAND_PARTNERSHIP', description: '有机会获得品牌合作机会', type: 'REWARD', minLevel: 6, sortOrder: 9 },
+    { name: '收益分成提升', code: 'REVENUE_BOOST', description: '作品收益分成比例提升 10%', type: 'REWARD', value: '10%', minLevel: 6, sortOrder: 10 },
+    { name: '定制化权益', code: 'CUSTOM_BENEFIT', description: '可申请定制化专属权益', type: 'PRIVILEGE', minLevel: 7, sortOrder: 11 }
+  ];
+
+  for (const b of benefitData) {
+    await prisma.benefit.upsert({
+      where: { code: b.code },
+      update: b,
+      create: b
+    });
+  }
+  console.log(`✅ ${benefitData.length} 项权益已创建`);
+
+  for (const user of [admin, ...users]) {
+    await prisma.userGrowth.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        totalExp: Math.floor(Math.random() * 500),
+        currentExp: Math.floor(Math.random() * 100),
+        levelId: 1
+      }
+    });
+  }
+  console.log(`✅ ${users.length + 1} 个用户成长记录已初始化`);
+
   console.log('\n🎉 示例数据填充完成！');
   console.log('\n📋 测试账号：');
   console.log('  管理员: admin / 123456');
