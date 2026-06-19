@@ -84,6 +84,21 @@ async function routes(fastify, options) {
     return { featured, message: '首页曝光设置成功' };
   });
 
+  fastify.put('/reorder', { preHandler: [fastify.adminOnly] }, async (request) => {
+    const { orders } = request.body;
+
+    if (orders && Array.isArray(orders)) {
+      for (const item of orders) {
+        await prisma.featuredTopic.update({
+          where: { id: Number(item.id) },
+          data: { sortOrder: Number(item.sortOrder) }
+        });
+      }
+    }
+
+    return { message: '排序已更新' };
+  });
+
   fastify.put('/:id', { preHandler: [fastify.adminOnly] }, async (request, reply) => {
     const featured = await prisma.featuredTopic.findUnique({
       where: { id: Number(request.params.id) }
@@ -115,7 +130,7 @@ async function routes(fastify, options) {
     if (isActive !== undefined) {
       await prisma.topic.update({
         where: { id: featured.topicId },
-        data: { isFeatured }
+        data: { isFeatured: isActive }
       });
     }
 
@@ -140,21 +155,6 @@ async function routes(fastify, options) {
     });
 
     return { message: '已取消首页曝光' };
-  });
-
-  fastify.put('/reorder', { preHandler: [fastify.adminOnly] }, async (request) => {
-    const { orders } = request.body;
-
-    if (orders && Array.isArray(orders)) {
-      for (const item of orders) {
-        await prisma.featuredTopic.update({
-          where: { id: Number(item.id) },
-          data: { sortOrder: Number(item.sortOrder) }
-        });
-      }
-    }
-
-    return { message: '排序已更新' };
   });
 }
 

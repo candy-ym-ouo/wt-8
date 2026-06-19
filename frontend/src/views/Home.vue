@@ -68,6 +68,35 @@
       </div>
     </section>
 
+    <section v-if="featuredTopics.length" class="container section">
+      <div class="section-header">
+        <h2 class="section-title font-serif">🔥 热门征稿</h2>
+        <router-link to="/topics" class="btn btn-ghost btn-sm">全部专题 →</router-link>
+      </div>
+      <div class="featured-topics-grid">
+        <router-link
+          v-for="ft in featuredTopics"
+          :key="ft.id"
+          :to="`/topics/${ft.topic.id}`"
+          class="featured-topic-card card"
+        >
+          <div class="ft-banner" v-if="ft.bannerImage">
+            <img :src="ft.bannerImage" :alt="ft.bannerTitle || ft.topic.title">
+          </div>
+          <div class="ft-info">
+            <span class="ft-badge">征稿进行中</span>
+            <h3 class="ft-title font-serif">{{ ft.bannerTitle || ft.topic.title }}</h3>
+            <p v-if="ft.bannerSubtitle" class="ft-subtitle">{{ ft.bannerSubtitle }}</p>
+            <p v-else class="ft-subtitle">{{ ft.topic.description }}</p>
+            <div class="ft-meta">
+              <span>📝 {{ ft.topic._count?.submissions || 0 }} 篇投稿</span>
+              <span v-if="ft.topic.deadline">⏰ 截止 {{ formatDate(ft.topic.deadline) }}</span>
+            </div>
+          </div>
+        </router-link>
+      </div>
+    </section>
+
     <section class="container section">
       <div class="section-header">
         <h2 class="section-title font-serif">最新刊物</h2>
@@ -110,17 +139,26 @@ import ZineCard from '@/components/ZineCard.vue'
 
 const authStore = useAuthStore()
 const featuredZines = ref([])
+const featuredTopics = ref([])
 const categories = ref([])
 const stats = ref({})
 
+const formatDate = (date) => {
+  if (!date) return '-'
+  const d = new Date(date)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
 onMounted(async () => {
   try {
-    const [zinesRes, catRes] = await Promise.all([
+    const [zinesRes, catRes, featuredRes] = await Promise.all([
       api.get('/zines?limit=8&sort=newest'),
-      api.get('/zines/categories')
+      api.get('/zines/categories'),
+      api.get('/featured?activeOnly=true').catch(() => ({ featured: [] }))
     ])
     featuredZines.value = zinesRes.zines
     categories.value = catRes.categories
+    featuredTopics.value = featuredRes.featured || []
     if (zinesRes.zines.length) {
       stats.value.totalZines = zinesRes.total
     }
@@ -257,6 +295,67 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 24px;
+}
+.featured-topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+.featured-topic-card {
+  display: flex;
+  overflow: hidden;
+  cursor: pointer;
+}
+.featured-topic-card:hover { transform: translateY(-3px); }
+.ft-banner {
+  width: 140px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ft-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ft-info {
+  padding: 18px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ft-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  width: fit-content;
+}
+.ft-title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.ft-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ft-meta {
+  display: flex;
+  gap: 14px;
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 .section-cta {
   background: var(--text-primary);

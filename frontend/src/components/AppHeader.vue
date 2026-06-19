@@ -9,8 +9,10 @@
       <nav class="nav">
         <router-link to="/" class="nav-link" exact-active-class="active">首页</router-link>
         <router-link to="/zines" class="nav-link" active-class="active">刊物</router-link>
+        <router-link to="/topics" class="nav-link" active-class="active">专题征稿</router-link>
         <template v-if="authStore.isAuthenticated">
           <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
+          <router-link to="/topic-submissions" class="nav-link" active-class="active">专题投稿</router-link>
           <router-link to="/subscriptions" class="nav-link" active-class="active">订阅</router-link>
           <router-link to="/messages" class="nav-link messages-link" active-class="active">
             消息
