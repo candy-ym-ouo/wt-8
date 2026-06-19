@@ -12,6 +12,10 @@ const subscriptionRoutes = require('./routes/subscriptions');
 const messageRoutes = require('./routes/messages');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/users');
+const topicRoutes = require('./routes/topics');
+const topicSubmissionRoutes = require('./routes/topic-submissions');
+const scheduleRoutes = require('./routes/schedules');
+const featuredRoutes = require('./routes/featured');
 
 fastify.register(cors, {
   origin: true,
@@ -51,6 +55,10 @@ fastify.register(subscriptionRoutes, { prefix: '/api/subscriptions' });
 fastify.register(messageRoutes, { prefix: '/api/messages' });
 fastify.register(adminRoutes, { prefix: '/api/admin' });
 fastify.register(userRoutes, { prefix: '/api/users' });
+fastify.register(topicRoutes, { prefix: '/api/topics' });
+fastify.register(topicSubmissionRoutes, { prefix: '/api/topic-submissions' });
+fastify.register(scheduleRoutes, { prefix: '/api/schedules' });
+fastify.register(featuredRoutes, { prefix: '/api/featured' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

@@ -23,6 +23,10 @@ model User {
   messages    Message[]    @relation("UserMessages")
   messagesReceived Message[] @relation("MessageReceiver")
   subscriptions Subscription[]
+  createdTopics Topic[]
+  topicSubmissions TopicSubmission[]
+  reviewedTopicSubmissions TopicSubmission[] @relation("TopicSubmissionReviewer")
+  createdSchedules TopicSchedule[]
 }
 
 model Zine {
@@ -95,4 +99,83 @@ model Review {
   status    String
   feedback  String?
   createdAt DateTime @default(now())
+}
+
+model Topic {
+  id              Int               @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  content         String
+  category        String
+  tags            String            @default("[]")
+  deadline        DateTime?
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String            @default("DRAFT")
+  isFeatured      Boolean           @default(false)
+  sortOrder       Int               @default(0)
+  maxSubmissions  Int               @default(0)
+  requirements    String?
+  prizes          String?
+  creatorId       Int
+  creator         User              @relation(fields: [creatorId], references: [id])
+  reviewers       String            @default("[]")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  submissions     TopicSubmission[]
+  schedules       TopicSchedule[]
+  featured        FeaturedTopic?
+}
+
+model TopicSubmission {
+  id          Int      @id @default(autoincrement())
+  topicId     Int
+  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  content     String
+  images      String   @default("[]")
+  status      String   @default("PENDING")
+  rejectionReason String?
+  reviewerId  Int?
+  reviewer    User?    @relation("TopicSubmissionReviewer", fields: [reviewerId], references: [id])
+  reviewedAt  DateTime?
+  scheduleId  Int?
+  schedule    TopicSchedule? @relation(fields: [scheduleId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TopicSchedule {
+  id            Int               @id @default(autoincrement())
+  topicId       Int
+  topic         Topic             @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  publishDate   DateTime
+  status        String            @default("PENDING")
+  creatorId     Int
+  creator       User              @relation(fields: [creatorId], references: [id])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  submissions   TopicSubmission[]
+}
+
+model FeaturedTopic {
+  id         Int      @id @default(autoincrement())
+  topicId    Int      @unique
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  bannerImage String?
+  bannerTitle String?
+  bannerSubtitle String?
+  sortOrder  Int      @default(0)
+  startDate  DateTime?
+  endDate    DateTime?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

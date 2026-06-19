@@ -229,6 +229,157 @@ async function routes(fastify, options) {
 
     return { message: '已删除' };
   });
+
+  fastify.get('/topics/stats', async () => {
+    const [
+      totalTopics, activeTopics, draftTopics, closedTopics,
+      totalTopicSubmissions, pendingTopicSubs, approvedTopicSubs,
+      rejectedTopicSubs, scheduledTopicSubs, publishedTopicSubs,
+      totalSchedules, activeSchedules, publishedSchedules,
+      totalFeatured
+    ] = await Promise.all([
+      prisma.topic.count(),
+      prisma.topic.count({ where: { status: 'ACTIVE' } }),
+      prisma.topic.count({ where: { status: 'DRAFT' } }),
+      prisma.topic.count({ where: { status: 'CLOSED' } }),
+      prisma.topicSubmission.count(),
+      prisma.topicSubmission.count({ where: { status: 'PENDING' } }),
+      prisma.topicSubmission.count({ where: { status: 'APPROVED' } }),
+      prisma.topicSubmission.count({ where: { status: 'REJECTED' } }),
+      prisma.topicSubmission.count({ where: { status: 'SCHEDULED' } }),
+      prisma.topicSubmission.count({ where: { status: 'PUBLISHED' } }),
+      prisma.topicSchedule.count(),
+      prisma.topicSchedule.count({ where: { status: 'PENDING' } }),
+      prisma.topicSchedule.count({ where: { status: 'PUBLISHED' } }),
+      prisma.featuredTopic.count({ where: { isActive: true } })
+    ]);
+
+    const topicStats = await prisma.topic.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { submissions: true, schedules: true } },
+        creator: { select: { id: true, username: true } }
+      }
+    });
+
+    return {
+      stats: {
+        totalTopics, activeTopics, draftTopics, closedTopics,
+        totalTopicSubmissions, pendingTopicSubs, approvedTopicSubs,
+        rejectedTopicSubs, scheduledTopicSubs, publishedTopicSubs,
+        totalSchedules, activeSchedules, publishedSchedules,
+        totalFeatured
+      },
+      topicStats
+    };
+  });
+
+  fastify.get('/topics/report', async (request) => {
+    const { topicId, startDate, endDate } = request.query;
+    const where = {};
+
+    if (topicId) where.topicId = Number(topicId);
+    if (startDate) where.createdAt = { ...where.createdAt, gte: new Date(startDate) };
+    if (endDate) where.createdAt = { ...where.createdAt, lte: new Date(endDate) };
+
+    const submissions = await prisma.topicSubmission.findMany({
+      where,
+      include: {
+        user: { select: { id: true, username: true } },
+        topic: { select: { id: true, title: true } },
+        reviewer: { select: { id: true, username: true } },
+        schedule: { select: { id: true, title: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const statusCounts = {
+      PENDING: 0, APPROVED: 0, REJECTED: 0, SCHEDULED: 0, PUBLISHED: 0
+    };
+    submissions.forEach(s => {
+      if (statusCounts[s.status] !== undefined) statusCounts[s.status]++;
+    });
+
+    return { submissions, statusCounts, total: submissions.length };
+  });
+
+  fastify.get('/topics/submissions', async (request) => {
+    const { status, topicId, page = 1, limit = 20 } = request.query;
+    const skip = (page - 1) * limit;
+    const where = {};
+
+    if (status && status !== 'all') where.status = status;
+    if (topicId) where.topicId = Number(topicId);
+
+    const [subsData, total] = await Promise.all([
+      prisma.topicSubmission.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, username: true, avatar: true } },
+          topic: { select: { id: true, title: true } },
+          reviewer: { select: { id: true, username: true } },
+          schedule: { select: { id: true, title: true } }
+        }
+      }),
+      prisma.topicSubmission.count({ where })
+    ]);
+
+    const submissions = subsData.map(s => ({ ...s, images: parseJSONField(s.images, []) }));
+    return { submissions, total, page: Number(page), totalPages: Math.ceil(total / limit) };
+  });
+
+  fastify.get('/topics', async (request) => {
+    const { status, page = 1, limit = 20 } = request.query;
+    const skip = (page - 1) * limit;
+    const where = {};
+
+    if (status && status !== 'all') where.status = status;
+
+    const [topics, total] = await Promise.all([
+      prisma.topic.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          creator: { select: { id: true, username: true } },
+          _count: { select: { submissions: true, schedules: true } }
+        }
+      }),
+      prisma.topic.count({ where })
+    ]);
+
+    return { topics, total, page: Number(page), totalPages: Math.ceil(total / limit) };
+  });
+
+  fastify.get('/schedules', async (request) => {
+    const { status, page = 1, limit = 20 } = request.query;
+    const skip = (page - 1) * limit;
+    const where = {};
+
+    if (status && status !== 'all') where.status = status;
+
+    const [schedules, total] = await Promise.all([
+      prisma.topicSchedule.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { publishDate: 'desc' },
+        include: {
+          topic: { select: { id: true, title: true } },
+          creator: { select: { id: true, username: true } },
+          _count: { select: { submissions: true } }
+        }
+      }),
+      prisma.topicSchedule.count({ where })
+    ]);
+
+    return { schedules, total, page: Number(page), totalPages: Math.ceil(total / limit) };
+  });
 }
 
 module.exports = routes;
