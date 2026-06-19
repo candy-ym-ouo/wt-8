@@ -1,0 +1,51 @@
+import { createRouter, createWebHashHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const routes = [
+  { path: '/', name: 'Home', component: () => import('@/views/Home.vue') },
+  { path: '/login', name: 'Login', component: () => import('@/views/Login.vue') },
+  { path: '/register', name: 'Register', component: () => import('@/views/Register.vue') },
+  { path: '/zines', name: 'Zines', component: () => import('@/views/Zines.vue') },
+  { path: '/zines/:id', name: 'ZineDetail', component: () => import('@/views/ZineDetail.vue') },
+  { path: '/submissions', name: 'Submissions', component: () => import('@/views/Submissions.vue'), meta: { requiresAuth: true } },
+  { path: '/submissions/new', name: 'NewSubmission', component: () => import('@/views/NewSubmission.vue'), meta: { requiresAuth: true } },
+  { path: '/subscriptions', name: 'Subscriptions', component: () => import('@/views/Subscriptions.vue'), meta: { requiresAuth: true } },
+  { path: '/messages', name: 'Messages', component: () => import('@/views/Messages.vue'), meta: { requiresAuth: true } },
+  { path: '/profile', name: 'Profile', component: () => import('@/views/Profile.vue'), meta: { requiresAuth: true } },
+  { path: '/admin', name: 'Admin', component: () => import('@/views/Admin.vue'), meta: { requiresAdmin: true } },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
+]
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes,
+  scrollBehavior() {
+    return { top: 0 }
+  }
+})
+
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+  if (!authStore.token && localStorage.getItem('zine_token')) {
+    authStore.initFromStorage()
+  }
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'Login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.requiresAdmin) {
+    if (!authStore.isAuthenticated) {
+      return { name: 'Login', query: { redirect: to.fullPath } }
+    }
+    if (authStore.user?.role !== 'ADMIN') {
+      return { name: 'Home' }
+    }
+  }
+
+  if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
+    return { name: 'Home' }
+  }
+})
+
+export default router

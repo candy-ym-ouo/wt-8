@@ -1,0 +1,204 @@
+<template>
+  <header class="header">
+    <div class="container header-inner">
+      <router-link to="/" class="logo">
+        <span class="logo-icon">📖</span>
+        <span class="logo-text">ZineSpace</span>
+      </router-link>
+      
+      <nav class="nav">
+        <router-link to="/" class="nav-link" exact-active-class="active">首页</router-link>
+        <router-link to="/zines" class="nav-link" active-class="active">刊物</router-link>
+        <template v-if="authStore.isAuthenticated">
+          <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
+          <router-link to="/subscriptions" class="nav-link" active-class="active">订阅</router-link>
+          <router-link to="/messages" class="nav-link messages-link" active-class="active">
+            消息
+            <span v-if="unreadCount > 0" class="badge-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+          </router-link>
+        </template>
+      </nav>
+
+      <div class="header-actions">
+        <template v-if="authStore.isAuthenticated">
+          <router-link to="/submissions/new" class="btn btn-primary btn-sm">
+            <span>+</span> 投稿
+          </router-link>
+          <div class="user-menu" @click="menuOpen = !menuOpen">
+            <img :src="authStore.user?.avatar" class="avatar" alt="">
+            <div v-if="menuOpen" class="menu-dropdown" @click.stop>
+              <router-link to="/profile" class="menu-item">
+                <span>👤</span> 个人资料
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
+                <span>⚙️</span> 后台管理
+              </router-link>
+              <div class="menu-divider"></div>
+              <button class="menu-item menu-logout" @click="handleLogout">
+                <span>🚪</span> 退出登录
+              </button>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <router-link to="/login" class="btn btn-ghost btn-sm">登录</router-link>
+          <router-link to="/register" class="btn btn-primary btn-sm">注册</router-link>
+        </template>
+      </div>
+    </div>
+    <div v-if="menuOpen" class="menu-overlay" @click="menuOpen = false"></div>
+  </header>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import api from '@/utils/api'
+
+const authStore = useAuthStore()
+const router = useRouter()
+const menuOpen = ref(false)
+const unreadCount = ref(0)
+let timer = null
+
+const fetchUnread = async () => {
+  if (!authStore.isAuthenticated) return
+  try {
+    const res = await api.get('/messages/unread')
+    unreadCount.value = res.unreadCount
+  } catch (e) {}
+}
+
+const handleLogout = () => {
+  authStore.logout()
+  menuOpen.value = false
+  router.push('/login')
+}
+
+onMounted(() => {
+  fetchUnread()
+  timer = setInterval(fetchUnread, 30000)
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
+</script>
+
+<style scoped>
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(250, 248, 245, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-light);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 24px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.logo-icon { font-size: 24px; }
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  max-width: 600px;
+  margin-left: 24px;
+}
+.nav-link {
+  position: relative;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+.nav-link:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.nav-link.active { color: var(--accent); background: var(--accent-light); }
+.messages-link { position: relative; }
+.badge-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-menu { position: relative; cursor: pointer; }
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-light);
+  transition: border-color 0.2s;
+}
+.user-menu:hover .avatar { border-color: var(--accent); }
+.menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  z-index: 101;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  text-align: left;
+}
+.menu-item:hover { background: var(--bg-tertiary); }
+.menu-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 6px 0;
+}
+.menu-logout { color: var(--danger); }
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+@media (max-width: 768px) {
+  .nav { display: none; }
+}
+</style>

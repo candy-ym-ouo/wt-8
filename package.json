@@ -1,0 +1,18 @@
+{
+  "name": "zine-space",
+  "version": "1.0.0",
+  "description": "ZineSpace - 小众 zine 私印刊物共享平台",
+  "scripts": {
+    "setup": "npm run setup:backend && npm run setup:frontend",
+    "setup:backend": "cd backend && npm run setup",
+    "setup:frontend": "cd frontend && npm install",
+    "dev": "concurrently -n BACKEND,FRONTEND -c red,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && npx prisma db push && node prisma/seed.js",
+    "reset": "cd backend && rm -f prisma/dev.db && npx prisma db push && node prisma/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
