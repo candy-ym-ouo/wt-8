@@ -445,6 +445,18 @@ class GrowthService {
         description: '发表评论',
         achievements: ['COMMENT_50'],
         tasks: ['DAILY_COMMENT']
+      },
+      EVENT_REGISTERED: {
+        exp: 20,
+        description: '报名线下活动',
+        achievements: ['FIRST_EVENT_REGISTRATION', 'EVENT_REGISTRATION_5'],
+        tasks: []
+      },
+      EVENT_ATTENDED: {
+        exp: 50,
+        description: '参加线下活动',
+        achievements: ['FIRST_EVENT_ATTENDANCE', 'EVENT_ATTENDANCE_3', 'EVENT_ATTENDANCE_10'],
+        tasks: []
       }
     };
 

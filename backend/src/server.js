@@ -18,6 +18,10 @@ const scheduleRoutes = require('./routes/schedules');
 const featuredRoutes = require('./routes/featured');
 const growthRoutes = require('./routes/growth');
 const adminGrowthRoutes = require('./routes/admin-growth');
+const eventRoutes = require('./routes/events');
+const eventRegistrationRoutes = require('./routes/event-registrations');
+const eventCheckInRoutes = require('./routes/event-checkins');
+const adminEventRoutes = require('./routes/admin-events');
 
 fastify.register(cors, {
   origin: true,
@@ -63,6 +67,10 @@ fastify.register(scheduleRoutes, { prefix: '/api/schedules' });
 fastify.register(featuredRoutes, { prefix: '/api/featured' });
 fastify.register(growthRoutes, { prefix: '/api/growth' });
 fastify.register(adminGrowthRoutes, { prefix: '/api/admin/growth' });
+fastify.register(eventRoutes, { prefix: '/api/events' });
+fastify.register(eventRegistrationRoutes, { prefix: '/api/event-registrations' });
+fastify.register(eventCheckInRoutes, { prefix: '/api/event-checkins' });
+fastify.register(adminEventRoutes, { prefix: '/api/admin/events' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

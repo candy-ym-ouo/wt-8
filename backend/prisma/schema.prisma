@@ -29,6 +29,11 @@ model User {
   createdSchedules TopicSchedule[]
   growth      UserGrowth?
   benefits    UserBenefit[]
+  createdEvents Event[]
+  eventRegistrations EventRegistration[]
+  reviewedEventRegistrations EventRegistration[] @relation("EventRegistrationReviewer")
+  eventCheckIns EventCheckIn[]
+  operatedEventCheckIns EventCheckIn[] @relation("EventCheckInOperator")
 }
 
 model Zine {
@@ -355,4 +360,78 @@ model UserBenefit {
   expiresAt   DateTime?
 
   @@unique([userId, benefitId])
+}
+
+model Event {
+  id              Int                @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  location        String
+  address         String?
+  category        String             @default("OTHER")
+  tags            String             @default("[]")
+  startTime       DateTime
+  endTime         DateTime
+  registrationDeadline DateTime?
+  maxParticipants Int                @default(0)
+  minParticipants Int                @default(0)
+  fee             Float              @default(0)
+  organizer       String?
+  organizerContact String?
+  requirements    String?
+  notice          String?
+  status          String             @default("DRAFT")
+  isFeatured      Boolean            @default(false)
+  sortOrder       Int                @default(0)
+  viewCount       Int                @default(0)
+  creatorId       Int
+  creator         User               @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  registrations   EventRegistration[]
+  checkIns        EventCheckIn[]
+}
+
+model EventRegistration {
+  id          Int      @id @default(autoincrement())
+  eventId     Int
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  name        String
+  phone       String
+  email       String?
+  company     String?
+  note        String?
+  status      String   @default("PENDING")
+  rejectionReason String?
+  reviewerId  Int?
+  reviewer    User?    @relation("EventRegistrationReviewer", fields: [reviewerId], references: [id])
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  checkIn     EventCheckIn?
+
+  @@unique([eventId, userId])
+}
+
+model EventCheckIn {
+  id              Int      @id @default(autoincrement())
+  eventId         Int
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrationId  Int      @unique
+  registration    EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  checkInTime     DateTime @default(now())
+  checkInType     String   @default("QRCODE")
+  operatorId      Int?
+  operator        User?    @relation("EventCheckInOperator", fields: [operatorId], references: [id])
+  remark          String?
+  createdAt       DateTime @default(now())
+
+  @@unique([eventId, registrationId])
 }
