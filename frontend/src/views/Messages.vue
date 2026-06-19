@@ -110,8 +110,46 @@
         </div>
         <form @submit.prevent="sendMessage" class="modal-body">
           <div class="form-group">
-            <label class="form-label">接收者用户名</label>
-            <input v-model="compose.receiver" class="form-input" placeholder="输入用户名" required>
+            <label class="form-label">接收者</label>
+            <div class="receiver-select">
+              <div class="receiver-input-wrap">
+                <span v-if="selectedReceiver" class="selected-user">
+                  <img :src="selectedReceiver.avatar">
+                  <span>{{ selectedReceiver.username }}</span>
+                  <button type="button" class="remove-user" @click="clearReceiver">✕</button>
+                </span>
+                <input
+                  v-model="receiverSearch"
+                  class="form-input receiver-input"
+                  :class="{ 'has-selected': selectedReceiver }"
+                  :placeholder="selectedReceiver ? '' : '搜索用户名或从下方选择'"
+                  @input="onReceiverSearch"
+                  @focus="showUserDropdown = true"
+                  @keydown.enter.prevent="selectFirstUser"
+                  @keydown.arrow.down.prevent="moveHover(1)"
+                  @keydown.arrow.up.prevent="moveHover(-1)"
+                >
+              </div>
+              <div v-if="showUserDropdown && filteredUsers.length > 0" class="user-dropdown">
+                <div
+                  v-for="(user, idx) in filteredUsers"
+                  :key="user.id"
+                  :class="['user-dropdown-item', { active: hoverIndex === idx }]"
+                  @click="selectReceiver(user)"
+                  @mouseenter="hoverIndex = idx"
+                >
+                  <img :src="user.avatar">
+                  <div class="user-info">
+                    <div class="user-name">{{ user.username }}</div>
+                    <div class="user-bio text-xs text-tertiary">{{ user.bio || '这位用户很神秘...' }}</div>
+                  </div>
+                  <span v-if="user.role === 'ADMIN'" class="badge badge-approved text-xs">管理员</span>
+                </div>
+              </div>
+              <div v-if="showUserDropdown && filteredUsers.length === 0 && receiverSearch" class="user-dropdown empty-dropdown">
+                没有找到匹配的用户
+              </div>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">标题</label>
@@ -134,7 +172,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, inject, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 
@@ -156,6 +194,84 @@ const unreadCount = ref(0)
 const showCompose = ref(false)
 const sending = ref(false)
 const compose = ref({ receiver: '', title: '', content: '' })
+
+const allUsers = ref([])
+const receiverSearch = ref('')
+const showUserDropdown = ref(false)
+const selectedReceiver = ref(null)
+const hoverIndex = ref(0)
+const usersLoading = ref(false)
+
+const filteredUsers = computed(() => {
+  const currentUserId = authStore.user?.id
+  let list = allUsers.value.filter(u => u.id !== currentUserId)
+  if (receiverSearch.value.trim()) {
+    const q = receiverSearch.value.toLowerCase()
+    list = list.filter(u => u.username.toLowerCase().includes(q))
+  }
+  return list.slice(0, 10)
+})
+
+const loadUsers = async () => {
+  if (allUsers.value.length > 0) return
+  usersLoading.value = true
+  try {
+    const res = await api.get('/users?limit=200')
+    allUsers.value = res.users || []
+  } catch (e) {
+    console.error('加载用户列表失败', e)
+  } finally {
+    usersLoading.value = false
+  }
+}
+
+const onReceiverSearch = () => {
+  hoverIndex.value = 0
+  showUserDropdown.value = true
+}
+
+const selectReceiver = (user) => {
+  selectedReceiver.value = user
+  compose.value.receiver = user.username
+  receiverSearch.value = ''
+  showUserDropdown.value = false
+}
+
+const clearReceiver = () => {
+  selectedReceiver.value = null
+  compose.value.receiver = ''
+  showUserDropdown.value = true
+}
+
+const selectFirstUser = () => {
+  if (filteredUsers.value.length > 0) {
+    selectReceiver(filteredUsers.value[hoverIndex.value])
+  }
+}
+
+const moveHover = (direction) => {
+  const list = filteredUsers.value
+  if (list.length === 0) return
+  let newIndex = hoverIndex.value + direction
+  if (newIndex < 0) newIndex = list.length - 1
+  if (newIndex >= list.length) newIndex = 0
+  hoverIndex.value = newIndex
+}
+
+const handleClickOutside = (e) => {
+  if (showUserDropdown.value && !e.target.closest('.receiver-select')) {
+    showUserDropdown.value = false
+  }
+}
+
+onMounted(() => {
+  fetchMessages()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 const formatTime = (date) => {
   const d = new Date(date)
@@ -240,29 +356,37 @@ const deleteMessage = async (id) => {
 }
 
 const replyToSender = () => {
-  compose.value = {
-    receiver: selected.value.sender?.username || '',
-    title: selected.value.title?.startsWith('Re:') ? selected.value.title : `Re: ${selected.value.title}`,
-    content: ''
+  const senderUser = allUsers.value.find(u => u.id === selected.value.senderId)
+  if (senderUser) {
+    selectedReceiver.value = senderUser
+    receiverSearch.value = ''
+  } else {
+    selectedReceiver.value = selected.value.sender ? {
+      id: selected.value.sender.id,
+      username: selected.value.sender.username,
+      avatar: selected.value.sender.avatar
+    } : null
+    compose.value.receiver = selected.value.sender?.username || ''
   }
+  compose.value.title = selected.value.title?.startsWith('Re:') ? selected.value.title : `Re: ${selected.value.title}`
+  compose.value.content = ''
   showCompose.value = true
 }
 
 const sendMessage = async () => {
+  if (!selectedReceiver.value) {
+    showToast('请先选择接收者', 'warning')
+    return
+  }
   sending.value = true
   try {
-    const users = await api.get('/admin/users?limit=100').catch(() => ({ users: [] }))
-    const userList = users.users || []
-    const receiver = userList.find(u => u.username === compose.value.receiver)
-    if (!receiver) throw { error: '找不到该用户' }
     await api.post('/messages', {
-      receiverId: receiver.id,
+      receiverId: selectedReceiver.value.id,
       title: compose.value.title,
       content: compose.value.content
     })
     showToast('发送成功', 'success')
     showCompose.value = false
-    compose.value = { receiver: '', title: '', content: '' }
   } catch (e) {
     showToast(e.error || '发送失败', 'error')
   } finally {
@@ -271,7 +395,15 @@ const sendMessage = async () => {
 }
 
 watch(showCompose, (v) => {
-  if (!v) compose.value = { receiver: '', title: '', content: '' }
+  if (v) {
+    loadUsers()
+  } else {
+    compose.value = { receiver: '', title: '', content: '' }
+    selectedReceiver.value = null
+    receiverSearch.value = ''
+    showUserDropdown.value = false
+    hoverIndex.value = 0
+  }
 })
 
 onMounted(() => fetchMessages())
@@ -483,5 +615,115 @@ onMounted(() => fetchMessages())
 @media (max-width: 900px) {
   .messages-layout { grid-template-columns: 1fr; }
   .list-content { max-height: 40vh; }
+}
+
+.receiver-select {
+  position: relative;
+}
+.receiver-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.selected-user {
+  position: absolute;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 2;
+}
+.selected-user img {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+}
+.remove-user {
+  margin-left: 4px;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.remove-user:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.receiver-input {
+  padding-left: 12px;
+}
+.receiver-input.has-selected {
+  padding-left: 180px;
+}
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.user-dropdown.empty-dropdown {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--border-light);
+}
+.user-dropdown-item:last-child {
+  border-bottom: none;
+}
+.user-dropdown-item:hover,
+.user-dropdown-item.active {
+  background: var(--bg-tertiary);
+}
+.user-dropdown-item img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+}
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.user-bio {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
 }
 </style>
