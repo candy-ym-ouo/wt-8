@@ -57,18 +57,25 @@
 
         <div class="match-actions">
           <template v-if="match.status === 'PENDING'">
-            <button v-if="!isInitiator && !match.responderConfirmed" class="btn btn-primary" @click="confirm">
-              ✅ 确认交换
-            </button>
-            <button v-if="!isInitiator && !match.responderConfirmed" class="btn btn-outline" @click="reject">
-              ❌ 拒绝
-            </button>
-            <button v-if="isInitiator && match.initiatorConfirmed" class="btn btn-outline" disabled>
-              已确认，等待对方确认
-            </button>
-            <button v-if="!isInitiator && match.responderConfirmed" class="btn btn-outline" disabled>
-              已确认，等待对方确认
-            </button>
+            <template v-if="isInitiator">
+              <button v-if="!match.initiatorConfirmed" class="btn btn-primary" @click="confirm">
+                ✅ 确认交换
+              </button>
+              <button v-else class="btn btn-outline" disabled>
+                已确认，等待对方确认
+              </button>
+            </template>
+            <template v-else>
+              <button v-if="!match.responderConfirmed" class="btn btn-primary" @click="confirm">
+                ✅ 确认交换
+              </button>
+              <button v-if="!match.responderConfirmed" class="btn btn-outline" @click="reject">
+                ❌ 拒绝
+              </button>
+              <button v-else class="btn btn-outline" disabled>
+                已确认，等待对方确认
+              </button>
+            </template>
             <button class="btn btn-ghost" @click="cancel">
               取消匹配
             </button>

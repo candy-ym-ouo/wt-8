@@ -179,7 +179,8 @@ async function routes(fastify, options) {
           listingBId: Number(listingBId),
           matchScore,
           initiatorId,
-          responderId
+          responderId,
+          initiatorConfirmed: true
         }
       });
 
@@ -243,8 +244,7 @@ async function routes(fastify, options) {
       data: updateData
     });
 
-    const bothConfirmed = (match.initiatorId === userId ? true : updated.initiatorConfirmed) &&
-                          (match.responderId === userId ? true : updated.responderConfirmed);
+    const bothConfirmed = updated.initiatorConfirmed && updated.responderConfirmed;
 
     let finalMatch = updated;
     if (bothConfirmed) {
