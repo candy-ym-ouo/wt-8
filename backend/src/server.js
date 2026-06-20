@@ -48,6 +48,8 @@ const adminPrintOrderRoutes = require('./routes/admin-print-orders');
 const readingCheckInRoutes = require('./routes/reading-checkins');
 const readingReviewRoutes = require('./routes/reading-reviews');
 const adminReadingRoutes = require('./routes/admin-reading');
+const competitionRoutes = require('./routes/competitions');
+const adminCompetitionRoutes = require('./routes/admin-competitions');
 
 fastify.register(cors, {
   origin: true,
@@ -123,6 +125,8 @@ fastify.register(adminPrintOrderRoutes, { prefix: '/api/admin/print-orders' });
 fastify.register(readingCheckInRoutes, { prefix: '/api/reading-checkins' });
 fastify.register(readingReviewRoutes, { prefix: '/api/reading-reviews' });
 fastify.register(adminReadingRoutes, { prefix: '/api/admin/reading' });
+fastify.register(competitionRoutes, { prefix: '/api/competitions' });
+fastify.register(adminCompetitionRoutes, { prefix: '/api/admin/competitions' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

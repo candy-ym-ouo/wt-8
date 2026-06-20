@@ -82,6 +82,11 @@ model User {
   readingCheckInLikes ReadingCheckInLike[] @relation("ReadingCheckInLikeUser")
   readingCheckInComments ReadingCheckInComment[] @relation("ReadingCheckInCommentUser")
   readingStreaks ReadingStreak[]
+
+  createdCompetitions Competition[] @relation("CompetitionCreator")
+  competitionEntries CompetitionEntry[]
+  judgedCompetitions Competition[] @relation("CompetitionJudge")
+  competitionScores CompetitionScore[]
 }
 
 model ReadingBook {
@@ -1447,4 +1452,102 @@ model PrintOrder {
   @@index([creatorId])
   @@index([reviewerId])
   @@index([createdAt])
+}
+
+model Competition {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  category        String    @default("CREATION")
+  tags            String    @default("[]")
+  rules           String?
+  prizes          String?
+  judges          String    @default("[]")
+  startDate       DateTime
+  endDate         DateTime
+  resultDate      DateTime?
+  maxEntries      Int       @default(0)
+  status          String    @default("DRAFT")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?     @relation("CompetitionJudge", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
+  isFeatured      Boolean   @default(false)
+  sortOrder       Int       @default(0)
+  viewCount       Int       @default(0)
+  entryCount      Int       @default(0)
+  scoringMode     String    @default("AVERAGE")
+  isResultPublic  Boolean   @default(false)
+  creatorId       Int
+  creator         User      @relation("CompetitionCreator", fields: [creatorId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  groups          CompetitionGroup[]
+  entries         CompetitionEntry[]
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([category])
+  @@index([startDate])
+  @@index([createdAt])
+}
+
+model CompetitionGroup {
+  id            Int       @id @default(autoincrement())
+  competitionId Int
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  entries       CompetitionEntry[]
+
+  @@index([competitionId])
+}
+
+model CompetitionEntry {
+  id              Int       @id @default(autoincrement())
+  competitionId   Int
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  groupId         Int?
+  group           CompetitionGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  title           String
+  content         String
+  images          String    @default("[]")
+  status          String    @default("PENDING")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  scores          CompetitionScore[]
+
+  @@unique([competitionId, userId])
+  @@index([competitionId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([status])
+}
+
+model CompetitionScore {
+  id          Int       @id @default(autoincrement())
+  entryId     Int
+  entry       CompetitionEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  judgeId     Int
+  judge       User      @relation(fields: [judgeId], references: [id])
+  score       Float     @default(0)
+  comment     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([entryId, judgeId])
+  @@index([entryId])
+  @@index([judgeId])
 }

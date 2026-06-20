@@ -13,6 +13,7 @@
         <router-link to="/topics" class="nav-link" active-class="active">专题征稿</router-link>
         <router-link to="/collaborations" class="nav-link" active-class="active">创作者合作</router-link>
         <router-link to="/crowdfundings" class="nav-link" active-class="active">众筹预售</router-link>
+        <router-link to="/competitions" class="nav-link" active-class="active">创作比赛</router-link>
         <router-link to="/swap" class="nav-link" active-class="active">交换市集</router-link>
         <router-link to="/interviews" class="nav-link" active-class="active">作者访谈</router-link>
         <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
@@ -68,6 +69,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/crowdfundings" class="menu-item">
                 <span>🎯</span> 众筹管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/competitions" class="menu-item">
+                <span>🏆</span> 比赛管理
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/swaps" class="menu-item">
                 <span>🔄</span> 交换管理

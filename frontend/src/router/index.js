@@ -67,6 +67,11 @@ const routes = [
   { path: '/reading/reviews/:id', name: 'ReadingReviewDetail', component: () => import('@/views/ReadingReviewDetail.vue') },
   { path: '/reading/reviews/new', name: 'NewReadingReview', component: () => import('@/views/NewReadingReview.vue'), meta: { requiresAuth: true } },
   { path: '/admin/reading', name: 'AdminReading', component: () => import('@/views/AdminReading.vue'), meta: { requiresAdmin: true } },
+  { path: '/competitions', name: 'Competitions', component: () => import('@/views/Competitions.vue') },
+  { path: '/competitions/new', name: 'NewCompetition', component: () => import('@/views/NewCompetition.vue'), meta: { requiresAuth: true } },
+  { path: '/competitions/:id/edit', name: 'EditCompetition', component: () => import('@/views/NewCompetition.vue'), meta: { requiresAuth: true } },
+  { path: '/competitions/:id', name: 'CompetitionDetail', component: () => import('@/views/CompetitionDetail.vue') },
+  { path: '/admin/competitions', name: 'AdminCompetitions', component: () => import('@/views/AdminCompetitions.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 
