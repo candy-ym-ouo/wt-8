@@ -23,6 +23,10 @@ const routes = [
   { path: '/tasks', name: 'Tasks', component: () => import('@/views/Tasks.vue'), meta: { requiresAuth: true } },
   { path: '/admin', name: 'Admin', component: () => import('@/views/Admin.vue'), meta: { requiresAdmin: true } },
   { path: '/admin/collections', name: 'AdminCollections', component: () => import('@/views/AdminCollections.vue'), meta: { requiresAdmin: true } },
+  { path: '/collaborations', name: 'Collaborations', component: () => import('@/views/Collaborations.vue') },
+  { path: '/collaborations/:id', name: 'CollaborationDetail', component: () => import('@/views/CollaborationDetail.vue') },
+  { path: '/collaboration-applications', name: 'CollaborationApplications', component: () => import('@/views/CollaborationApplications.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/collaborations', name: 'AdminCollaborations', component: () => import('@/views/AdminCollaborations.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

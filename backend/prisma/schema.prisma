@@ -35,6 +35,53 @@ model User {
   eventCheckIns EventCheckIn[]
   operatedEventCheckIns EventCheckIn[] @relation("EventCheckInOperator")
   createdCollections Collection[]
+  createdCollaborations Collaboration[]
+  collaborationApplications CollaborationApplication[]
+  reviewedCollaborationApplications CollaborationApplication[] @relation("CollaborationApplicationReviewer")
+}
+
+model Collaboration {
+  id              Int                         @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  category        String                      @default("OTHER")
+  tags            String                      @default("[]")
+  requirements    String?
+  deliverables    String?
+  compensation    String?
+  deadline        DateTime?
+  status          String                      @default("DRAFT")
+  isFeatured      Boolean                     @default(false)
+  sortOrder       Int                         @default(0)
+  viewCount       Int                         @default(0)
+  creatorId       Int
+  creator         User                        @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+
+  applications    CollaborationApplication[]
+}
+
+model CollaborationApplication {
+  id              Int           @id @default(autoincrement())
+  collaborationId Int
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id])
+  portfolio       String?
+  skills          String?
+  motivation      String?
+  contactInfo     String?
+  status          String        @default("PENDING")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?         @relation("CollaborationApplicationReviewer", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([collaborationId, userId])
 }
 
 model Zine {

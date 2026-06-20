@@ -24,6 +24,9 @@ const eventCheckInRoutes = require('./routes/event-checkins');
 const adminEventRoutes = require('./routes/admin-events');
 const collectionRoutes = require('./routes/collections');
 const adminCollectionRoutes = require('./routes/admin-collections');
+const collaborationRoutes = require('./routes/collaborations');
+const collaborationApplicationRoutes = require('./routes/collaboration-applications');
+const adminCollaborationRoutes = require('./routes/admin-collaborations');
 
 fastify.register(cors, {
   origin: true,
@@ -75,6 +78,9 @@ fastify.register(eventCheckInRoutes, { prefix: '/api/event-checkins' });
 fastify.register(adminEventRoutes, { prefix: '/api/admin/events' });
 fastify.register(collectionRoutes, { prefix: '/api/collections' });
 fastify.register(adminCollectionRoutes, { prefix: '/api/admin/collections' });
+fastify.register(collaborationRoutes, { prefix: '/api/collaborations' });
+fastify.register(collaborationApplicationRoutes, { prefix: '/api/collaboration-applications' });
+fastify.register(adminCollaborationRoutes, { prefix: '/api/admin/collaborations' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

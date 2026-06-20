@@ -75,7 +75,7 @@
                 <img :src="selected.sender?.avatar" class="msg-avatar-sm">
                 <div>
                   <div class="font-medium text-sm">{{ selected.sender?.username || '系统消息' }}</div>
-                  <div class="text-xs text-tertiary">{{ selected.type === 'SYSTEM' ? '系统通知' : '用户消息' }}</div>
+                  <div class="text-xs text-tertiary">{{ getTypeLabel(selected.type) }}</div>
                 </div>
               </div>
               <div class="text-xs text-tertiary text-right">
@@ -182,6 +182,8 @@ const showToast = inject('showToast')
 const typeTabs = [
   { label: '全部', value: 'all' },
   { label: '系统通知', value: 'SYSTEM' },
+  { label: '合作消息', value: 'COLLABORATION' },
+  { label: '活动消息', value: 'EVENT' },
   { label: '用户私信', value: 'USER' }
 ]
 
@@ -290,6 +292,16 @@ const formatFullDate = (date) => {
 }
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ')
+
+const getTypeLabel = (type) => {
+  const map = {
+    SYSTEM: '系统通知',
+    COLLABORATION: '合作消息',
+    EVENT: '活动消息',
+    USER: '用户消息'
+  }
+  return map[type] || type
+}
 
 const formatContent = (text) => {
   return text
