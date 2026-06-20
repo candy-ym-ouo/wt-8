@@ -66,7 +66,7 @@
               </button>
               <router-link
                 v-if="(isOwner || isAdmin) && crowdfunding.orderCount > 0"
-                :to="`/admin/crowdfundings/orders?crowdfundingId=${crowdfunding.id}`"
+                :to="`/admin/crowdfundings?tab=orders&crowdfundingId=${crowdfunding.id}`"
                 class="btn btn-ghost btn-sm"
               >
                 📦 查看订单 ({{ crowdfunding.orderCount }})

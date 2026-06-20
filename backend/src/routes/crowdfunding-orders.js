@@ -343,6 +343,62 @@ async function routes(fastify, options) {
       message: '订单已取消'
     };
   });
+
+  fastify.put('/:id/deliver', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params;
+
+    const order = await prisma.crowdfundingOrder.findUnique({
+      where: { id: Number(id) },
+      include: { crowdfunding: true }
+    });
+
+    if (!order) {
+      return reply.code(404).send({ error: '订单不存在' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: request.user.id } });
+    const isAdmin = user.role === 'ADMIN';
+    const isOwner = order.userId === request.user.id;
+    const isCreator = order.crowdfunding.creatorId === request.user.id;
+
+    if (!isAdmin && !isOwner && !isCreator) {
+      return reply.code(403).send({ error: '无权操作此订单' });
+    }
+
+    if (order.status !== 'SHIPPED') {
+      return reply.code(400).send({ error: '订单状态不正确，只有已发货的订单才能确认收货' });
+    }
+
+    const updated = await prisma.crowdfundingOrder.update({
+      where: { id: Number(id) },
+      data: {
+        status: 'DELIVERED',
+        deliveredAt: new Date()
+      },
+      include: { tier: true }
+    });
+
+    if (isAdmin) {
+      await prisma.message.create({
+        data: {
+          senderId: request.user.id,
+          receiverId: order.userId,
+          title: '✅ 订单已完成',
+          content: `您支持的众筹项目《${order.crowdfunding.title}》订单已确认收货！\n\n订单号：${order.orderNo}\n感谢您的支持！`,
+          type: 'CROWDFUNDING'
+        }
+      });
+    }
+
+    return {
+      order: {
+        ...updated,
+        tier: formatTier(updated.tier),
+        statusText: getOrderStatusText(updated.status)
+      },
+      message: '已确认收货'
+    };
+  });
 }
 
 module.exports = routes;
