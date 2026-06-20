@@ -25,21 +25,34 @@ async function routes(fastify, options) {
   fastify.get('/', async (request) => {
     const { category, search, page = 1, limit = 12, sort = 'newest' } = request.query;
     const skip = (page - 1) * limit;
+    const now = new Date();
 
-    const where = { status: 'PUBLISHED' };
+    const where = {
+      status: 'PUBLISHED',
+      AND: [
+        {
+          OR: [
+            { publishDate: null },
+            { publishDate: { lte: now } }
+          ]
+        }
+      ]
+    };
     if (category && category !== 'all') where.category = category;
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-        { authorName: { contains: search } }
-      ];
+      where.AND.push({
+        OR: [
+          { title: { contains: search } },
+          { description: { contains: search } },
+          { authorName: { contains: search } }
+        ]
+      });
     }
 
-    let orderBy = { createdAt: 'desc' };
+    let orderBy = [{ publishDate: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }];
     if (sort === 'popular') orderBy = { viewCount: 'desc' };
     if (sort === 'liked') orderBy = { likeCount: 'desc' };
-    if (sort === 'featured') orderBy = [{ isFeatured: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'desc' }];
+    if (sort === 'featured') orderBy = [{ isFeatured: 'desc' }, { sortOrder: 'asc' }, { publishDate: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }];
 
     const [interviewsData, total] = await Promise.all([
       prisma.interview.findMany({
@@ -91,7 +104,14 @@ async function routes(fastify, options) {
         AND: [
           { OR: [{ startDate: null }, { startDate: { lte: now } }] },
           { OR: [{ endDate: null }, { endDate: { gte: now } }] }
-        ]
+        ],
+        interview: {
+          status: 'PUBLISHED',
+          OR: [
+            { publishDate: null },
+            { publishDate: { lte: now } }
+          ]
+        }
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
@@ -117,6 +137,7 @@ async function routes(fastify, options) {
 
   fastify.get('/:id', async (request, reply) => {
     const interviewId = Number(request.params.id);
+    const now = new Date();
 
     const interviewData = await prisma.interview.findUnique({
       where: { id: interviewId },
@@ -127,6 +148,10 @@ async function routes(fastify, options) {
     });
 
     if (!interviewData || interviewData.status !== 'PUBLISHED') {
+      return reply.code(404).send({ error: '访谈不存在' });
+    }
+
+    if (interviewData.publishDate && interviewData.publishDate > now) {
       return reply.code(404).send({ error: '访谈不存在' });
     }
 
@@ -157,9 +182,13 @@ async function routes(fastify, options) {
     const interviewId = Number(request.params.id);
     const { page = 1, limit = 20 } = request.query;
     const skip = (page - 1) * limit;
+    const now = new Date();
 
     const interview = await prisma.interview.findUnique({ where: { id: interviewId } });
-    if (!interview) {
+    if (!interview || interview.status !== 'PUBLISHED') {
+      return reply.code(404).send({ error: '访谈不存在' });
+    }
+    if (interview.publishDate && interview.publishDate > now) {
       return reply.code(404).send({ error: '访谈不存在' });
     }
 
@@ -187,13 +216,17 @@ async function routes(fastify, options) {
   fastify.post('/:id/comments', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const interviewId = Number(request.params.id);
     const { content } = request.body;
+    const now = new Date();
 
     if (!content || !content.trim()) {
       return reply.code(400).send({ error: '评论内容不能为空' });
     }
 
     const interview = await prisma.interview.findUnique({ where: { id: interviewId } });
-    if (!interview) {
+    if (!interview || interview.status !== 'PUBLISHED') {
+      return reply.code(404).send({ error: '访谈不存在' });
+    }
+    if (interview.publishDate && interview.publishDate > now) {
       return reply.code(404).send({ error: '访谈不存在' });
     }
 
@@ -218,12 +251,16 @@ async function routes(fastify, options) {
 
   fastify.post('/:id/like', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const interviewId = Number(request.params.id);
+    const now = new Date();
 
     const interview = await prisma.interview.findUnique({
       where: { id: interviewId }
     });
 
-    if (!interview) {
+    if (!interview || interview.status !== 'PUBLISHED') {
+      return reply.code(404).send({ error: '访谈不存在' });
+    }
+    if (interview.publishDate && interview.publishDate > now) {
       return reply.code(404).send({ error: '访谈不存在' });
     }
 

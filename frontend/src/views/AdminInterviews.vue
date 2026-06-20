@@ -547,9 +547,9 @@
             <input v-model="scheduleForm.title" type="text" class="form-input" placeholder="请输入排期标题">
           </div>
           <div class="form-group">
-            <label class="form-label">关联访谈</label>
+            <label class="form-label">关联访谈 *</label>
             <select v-model="scheduleForm.interviewId" class="form-select">
-              <option :value="null">请选择访谈</option>
+              <option :value="null">请选择关联的访谈</option>
               <option v-for="i in allInterviews" :key="i.id" :value="i.id">{{ i.title }}</option>
             </select>
           </div>
@@ -1211,21 +1211,20 @@ const closeScheduleForm = () => {
 }
 
 const saveSchedule = async () => {
-  if (!scheduleForm.value.title || !scheduleForm.value.scheduledAt) {
-    alert('请填写排期标题和时间')
+  if (!scheduleForm.value.title || !scheduleForm.value.scheduledAt || !scheduleForm.value.interviewId) {
+    alert('请填写排期标题、选择关联访谈和时间')
     return
   }
   savingSchedule.value = true
   try {
-    const interviewId = scheduleForm.value.interviewId || managingInterview.value?.id
     const data = {
       ...scheduleForm.value,
-      interviewId
+      interviewId: scheduleForm.value.interviewId
     }
     if (editingSchedule.value?.id) {
       await api.put(`/admin/interviews/schedules/${editingSchedule.value.id}`, data)
     } else {
-      await api.post(`/admin/interviews/${interviewId}/schedules`, data)
+      await api.post('/admin/interviews/schedules', data)
     }
     closeScheduleForm()
     loadSchedules(schedulePage.value)

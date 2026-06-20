@@ -624,36 +624,61 @@ async function routes(fastify, options) {
     return { schedules, total, page: Number(page), totalPages: Math.ceil(total / limit) };
   });
 
-  fastify.post('/:id/schedules', async (request, reply) => {
-    const interviewId = Number(request.params.id);
-    const { title, description, scheduledAt, status = 'PENDING', note } = request.body;
+  fastify.post('/schedules', async (request, reply) => {
+    const { interviewId, title, description, scheduledAt, status = 'PENDING', note } = request.body;
 
-    const interview = await prisma.interview.findUnique({ where: { id: interviewId } });
+    if (!interviewId) {
+      return reply.code(400).send({ error: '请选择关联的访谈' });
+    }
+    if (!title || !title.trim()) {
+      return reply.code(400).send({ error: '请填写排期标题' });
+    }
+    if (!scheduledAt) {
+      return reply.code(400).send({ error: '请选择排期时间' });
+    }
+
+    const iid = Number(interviewId);
+    const interview = await prisma.interview.findUnique({ where: { id: iid } });
     if (!interview) {
       return reply.code(404).send({ error: '访谈不存在' });
     }
 
-    const schedule = await prisma.interviewSchedule.create({
-      data: {
-        interviewId,
-        title,
-        description,
-        scheduledAt: new Date(scheduledAt),
-        status,
-        note,
-        creatorId: request.user.id
-      },
-      include: {
-        creator: { select: { id: true, username: true } }
+    const scheduledDate = new Date(scheduledAt);
+
+    let createdSchedule;
+    await prisma.$transaction(async (tx) => {
+      createdSchedule = await tx.interviewSchedule.create({
+        data: {
+          interviewId: iid,
+          title: title.trim(),
+          description,
+          scheduledAt: scheduledDate,
+          status,
+          note,
+          creatorId: request.user.id
+        },
+        include: {
+          creator: { select: { id: true, username: true } }
+        }
+      });
+
+      if (status === 'PUBLISHED') {
+        await tx.interview.update({
+          where: { id: iid },
+          data: {
+            status: 'PUBLISHED',
+            publishDate: scheduledDate
+          }
+        });
       }
     });
 
-    return { schedule, message: '创建排期成功' };
+    return { schedule: createdSchedule, message: '创建排期成功' };
   });
 
   fastify.put('/schedules/:id', async (request, reply) => {
     const scheduleId = Number(request.params.id);
-    const { title, description, scheduledAt, status, note } = request.body;
+    const { title, description, scheduledAt, status, note, interviewId } = request.body;
 
     const existing = await prisma.interviewSchedule.findUnique({ where: { id: scheduleId } });
     if (!existing) {
@@ -666,12 +691,36 @@ async function routes(fastify, options) {
     if (scheduledAt !== undefined) updateData.scheduledAt = new Date(scheduledAt);
     if (status !== undefined) updateData.status = status;
     if (note !== undefined) updateData.note = note;
+    let targetInterviewId = existing.interviewId;
+    if (interviewId !== undefined) {
+      const newIid = Number(interviewId);
+      const intv = await prisma.interview.findUnique({ where: { id: newIid } });
+      if (!intv) {
+        return reply.code(404).send({ error: '目标访谈不存在' });
+      }
+      updateData.interviewId = newIid;
+      targetInterviewId = newIid;
+    }
 
-    const updated = await prisma.interviewSchedule.update({
-      where: { id: scheduleId },
-      data: updateData,
-      include: {
-        creator: { select: { id: true, username: true } }
+    let updated;
+    await prisma.$transaction(async (tx) => {
+      updated = await tx.interviewSchedule.update({
+        where: { id: scheduleId },
+        data: updateData,
+        include: {
+          creator: { select: { id: true, username: true } }
+        }
+      });
+
+      if (status === 'PUBLISHED') {
+        const finalScheduledAt = scheduledAt ? new Date(scheduledAt) : existing.scheduledAt;
+        await tx.interview.update({
+          where: { id: targetInterviewId },
+          data: {
+            status: 'PUBLISHED',
+            publishDate: finalScheduledAt
+          }
+        });
       }
     });
 
