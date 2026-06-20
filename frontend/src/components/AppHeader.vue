@@ -16,6 +16,7 @@
         <router-link to="/swap" class="nav-link" active-class="active">交换市集</router-link>
         <router-link to="/interviews" class="nav-link" active-class="active">作者访谈</router-link>
         <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
+        <router-link to="/reading" class="nav-link" active-class="active">阅读社区</router-link>
         <router-link to="/exclusive-zines" class="nav-link" active-class="active">专属刊物</router-link>
         <router-link to="/early-access" class="nav-link" active-class="active">提前阅读</router-link>
         <template v-if="authStore.isAuthenticated">
@@ -26,6 +27,8 @@
           <router-link to="/crowdfunding-orders" class="nav-link" active-class="active">我的众筹</router-link>
           <router-link to="/my-swaps" class="nav-link" active-class="active">我的交换</router-link>
           <router-link to="/subscriptions" class="nav-link" active-class="active">订阅</router-link>
+          <router-link to="/reading/checkin" class="nav-link" active-class="active">我的打卡</router-link>
+          <router-link to="/reading/reviews/new" class="nav-link" active-class="active">写书评</router-link>
           <router-link to="/messages" class="nav-link messages-link" active-class="active">
             消息
             <span v-if="unreadCount > 0" class="badge-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
@@ -80,6 +83,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/interviews" class="menu-item">
                 <span>💬</span> 访谈管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/reading" class="menu-item">
+                <span>📚</span> 阅读社区管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">

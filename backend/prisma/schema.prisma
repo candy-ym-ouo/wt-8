@@ -74,6 +74,185 @@ model User {
   createdPrintOrders PrintOrder[]
   reviewedPrintOrders PrintOrder[] @relation("PrintOrderReviewer")
   quotedPrintOrders  PrintOrder[] @relation("PrintOrderQuoter")
+
+  readingCheckIns ReadingCheckIn[]
+  readingReviews ReadingReview[]
+  readingReviewLikes ReadingReviewLike[] @relation("ReadingReviewLikeUser")
+  readingReviewComments ReadingReviewComment[] @relation("ReadingReviewCommentUser")
+  readingCheckInLikes ReadingCheckInLike[] @relation("ReadingCheckInLikeUser")
+  readingCheckInComments ReadingCheckInComment[] @relation("ReadingCheckInCommentUser")
+  readingStreaks ReadingStreak[]
+}
+
+model ReadingBook {
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String
+  coverImage  String?
+  isbn        String?
+  publisher   String?
+  publishDate DateTime?
+  category    String   @default("OTHER")
+  tags        String   @default("[]")
+  description String?
+  pageCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  checkIns    ReadingCheckIn[]
+  reviews     ReadingReview[]
+
+  @@index([title])
+  @@index([category])
+}
+
+model ReadingCheckIn {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  bookId        Int?
+  book          ReadingBook? @relation(fields: [bookId], references: [id])
+  bookTitle     String
+  bookAuthor    String?
+  pagesRead     Int       @default(0)
+  minutesRead   Int       @default(0)
+  mood          String    @default("HAPPY")
+  note          String?
+  checkInDate   DateTime  @default(now())
+  isPublic      Boolean   @default(true)
+  likeCount     Int       @default(0)
+  commentCount  Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  likes         ReadingCheckInLike[]
+  comments      ReadingCheckInComment[]
+
+  @@unique([userId, checkInDate])
+  @@index([userId])
+  @@index([checkInDate])
+  @@index([isPublic])
+}
+
+model ReadingCheckInLike {
+  id          Int       @id @default(autoincrement())
+  checkInId   Int
+  checkIn     ReadingCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User @relation("ReadingCheckInLikeUser", fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([checkInId, userId])
+  @@index([userId])
+}
+
+model ReadingCheckInComment {
+  id          Int       @id @default(autoincrement())
+  checkInId   Int
+  checkIn     ReadingCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation("ReadingCheckInCommentUser", fields: [userId], references: [id])
+  content     String
+  status      String    @default("APPROVED")
+  isPinned    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([checkInId])
+  @@index([status])
+}
+
+model ReadingReview {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  bookId        Int?
+  book          ReadingBook? @relation(fields: [bookId], references: [id])
+  bookTitle     String
+  bookAuthor    String?
+  coverImage    String?
+  title         String
+  content       String
+  rating        Int       @default(5)
+  category      String    @default("OTHER")
+  tags          String    @default("[]")
+  status        String    @default("PUBLISHED")
+  rejectionReason String?
+  reviewerId    Int?
+  reviewedAt    DateTime?
+  isFeatured    Boolean   @default(false)
+  sortOrder     Int       @default(0)
+  viewCount     Int       @default(0)
+  likeCount     Int       @default(0)
+  commentCount  Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  likes         ReadingReviewLike[]
+  comments      ReadingReviewComment[]
+  featured      FeaturedReadingReview?
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model ReadingReviewLike {
+  id          Int       @id @default(autoincrement())
+  reviewId    Int
+  review      ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User @relation("ReadingReviewLikeUser", fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([userId])
+}
+
+model ReadingReviewComment {
+  id          Int       @id @default(autoincrement())
+  reviewId    Int
+  review      ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User      @relation("ReadingReviewCommentUser", fields: [userId], references: [id])
+  content     String
+  status      String    @default("APPROVED")
+  isPinned    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([reviewId])
+  @@index([status])
+}
+
+model ReadingStreak {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak   Int      @default(0)
+  longestStreak   Int      @default(0)
+  totalCheckIns   Int      @default(0)
+  totalMinutes    Int      @default(0)
+  totalPages      Int      @default(0)
+  lastCheckInDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FeaturedReadingReview {
+  id              Int       @id @default(autoincrement())
+  reviewId        Int       @unique
+  review          ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  bannerImage     String?
+  bannerTitle     String?
+  bannerSubtitle  String?
+  sortOrder       Int       @default(0)
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model Collaboration {
