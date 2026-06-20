@@ -516,6 +516,188 @@ async function main() {
   }
   console.log(`✅ ${featuredCollectionData.length} 个精选推荐已创建`);
 
+  const crowdfundingData = [
+    {
+      title: '纸间低语 Issue 01 众筹预售',
+      description: '一本关于手写书信与慢生活的独立刊物，收录了六位作者的随笔与摄影作品，探讨在数字时代中纸质媒介的温度。本次众筹旨在筹集印刷费用，让这本刊物能够以最美好的姿态呈现在读者面前。',
+      category: 'ZINE',
+      tags: JSON.stringify(['书信', '慢生活', '手写', '独立出版']),
+      targetAmount: 8000,
+      currentAmount: 5200,
+      backerCount: 42,
+      status: 'PUBLISHED',
+      isFeatured: true,
+      sortOrder: 1,
+      viewCount: 1250,
+      stockThreshold: 10,
+      lowStockAlert: false,
+      creatorIndex: 0,
+      coverImage: 'https://picsum.photos/seed/crowdfunding001/800/600',
+      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      startTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      tiers: [
+        {
+          name: '早鸟支持者',
+          description: '感谢您的支持！您将获得：一本实体刊物 + 电子版 + 特别感谢名单',
+          price: 49,
+          stock: 50,
+          sortOrder: 1,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['实体刊物 x1', '电子版 x1', '感谢名单', '早鸟专属明信片'])
+        },
+        {
+          name: '标准支持者',
+          description: '您将获得：一本实体刊物 + 电子版 + 特别感谢名单',
+          price: 68,
+          stock: 200,
+          sortOrder: 2,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['实体刊物 x1', '电子版 x1', '感谢名单'])
+        },
+        {
+          name: '双人套装',
+          description: '适合与朋友一起分享！您将获得：两本实体刊物 + 电子版 + 特别感谢名单',
+          price: 128,
+          stock: 50,
+          sortOrder: 3,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['实体刊物 x2', '电子版 x1', '感谢名单', '专属书签 x2'])
+        },
+        {
+          name: '珍藏套装',
+          description: '最完整的收藏体验！您将获得：精装实体刊 + 电子版 + 作者签名 + 限量周边 + VIP感谢',
+          price: 198,
+          stock: 30,
+          sortOrder: 4,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['精装实体刊 x1', '电子版 x1', '作者签名', '限量徽章', '明信片套装', 'VIP感谢名单'])
+        }
+      ]
+    },
+    {
+      title: '像素少女 插画集 众筹',
+      description: '独立插画师「画意」的首本个人插画集，收录了超过 100 幅像素风格插画作品，讲述一个关于成长与梦想的故事。',
+      category: 'ART_BOOK',
+      tags: JSON.stringify(['插画', '像素', '画集', '独立出版']),
+      targetAmount: 15000,
+      currentAmount: 12800,
+      backerCount: 89,
+      status: 'PUBLISHED',
+      isFeatured: true,
+      sortOrder: 2,
+      viewCount: 2300,
+      stockThreshold: 20,
+      lowStockAlert: false,
+      creatorIndex: 1,
+      coverImage: 'https://picsum.photos/seed/crowdfunding002/800/600',
+      deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+      tiers: [
+        {
+          name: '电子画集',
+          description: '高清电子版画集，包含所有插画作品',
+          price: 29,
+          stock: 0,
+          sortOrder: 1,
+          isUnlimited: true,
+          deliveryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['电子版画集', '手机壁纸 x5'])
+        },
+        {
+          name: '实体画集',
+          description: '精装实体画集 + 电子版',
+          price: 89,
+          stock: 150,
+          sortOrder: 2,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['精装实体画集', '电子版画集', '感谢名单'])
+        },
+        {
+          name: '签名版画集',
+          description: '作者签名版画集 + 限量周边',
+          price: 168,
+          stock: 50,
+          sortOrder: 3,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['签名版画集', '电子版', '限量徽章', '明信片', '贴纸套装'])
+        }
+      ]
+    },
+    {
+      title: '城市漫游 摄影 zine 第三期',
+      description: '街头摄影师「快门手」的第三本摄影 zine，用胶片记录城市的日与夜。',
+      category: 'ZINE',
+      tags: JSON.stringify(['摄影', '胶片', '城市', 'zine']),
+      targetAmount: 5000,
+      currentAmount: 5200,
+      backerCount: 67,
+      status: 'SUCCESSFUL',
+      isFeatured: false,
+      sortOrder: 3,
+      viewCount: 890,
+      stockThreshold: 15,
+      lowStockAlert: false,
+      creatorIndex: 2,
+      coverImage: 'https://picsum.photos/seed/crowdfunding003/800/600',
+      deadline: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      startTime: new Date(Date.now() - 33 * 24 * 60 * 60 * 1000),
+      tiers: [
+        {
+          name: '标准套装',
+          description: '实体 zine 一本 + 电子版',
+          price: 55,
+          stock: 0,
+          sortOrder: 1,
+          isUnlimited: true,
+          deliveryDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['实体 zine x1', '电子版', '感谢名单'])
+        },
+        {
+          name: '珍藏套装',
+          description: '实体 zine + 限量照片冲印 + 作者签名',
+          price: 128,
+          stock: 30,
+          sortOrder: 2,
+          isUnlimited: false,
+          deliveryDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
+          perks: JSON.stringify(['实体 zine x1', '电子版', '5寸照片 x3', '作者签名', '限量编号'])
+        }
+      ]
+    }
+  ];
+
+  const crowdfundings = [];
+  for (const cfData of crowdfundingData) {
+    const { tiers: tierData, creatorIndex, ...cfInfo } = cfData;
+    const creator = users[creatorIndex] || admin;
+    
+    const crowdfunding = await prisma.crowdfunding.create({
+      data: {
+        ...cfInfo,
+        creatorId: creator.id
+      }
+    });
+    crowdfundings.push(crowdfunding);
+
+    if (tierData && tierData.length > 0) {
+      for (const tier of tierData) {
+        await prisma.crowdfundingTier.create({
+          data: {
+            ...tier,
+            crowdfundingId: crowdfunding.id
+          }
+        });
+      }
+    }
+  }
+  console.log(`✅ ${crowdfundings.length} 个众筹项目已创建`);
+
   console.log('\n🎉 示例数据填充完成！');
   console.log('\n📋 测试账号：');
   console.log('  管理员: admin / 123456');

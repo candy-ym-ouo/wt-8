@@ -30,6 +30,12 @@ const routes = [
   { path: '/collaboration-applications', name: 'CollaborationApplications', component: () => import('@/views/CollaborationApplications.vue'), meta: { requiresAuth: true } },
   { path: '/my-collaborations', name: 'MyCollaborations', component: () => import('@/views/MyCollaborations.vue'), meta: { requiresAuth: true } },
   { path: '/admin/collaborations', name: 'AdminCollaborations', component: () => import('@/views/AdminCollaborations.vue'), meta: { requiresAdmin: true } },
+  { path: '/crowdfundings', name: 'Crowdfundings', component: () => import('@/views/Crowdfundings.vue') },
+  { path: '/crowdfundings/new', name: 'NewCrowdfunding', component: () => import('@/views/NewCrowdfunding.vue'), meta: { requiresAuth: true } },
+  { path: '/crowdfundings/:id/edit', name: 'EditCrowdfunding', component: () => import('@/views/NewCrowdfunding.vue'), meta: { requiresAuth: true } },
+  { path: '/crowdfundings/:id', name: 'CrowdfundingDetail', component: () => import('@/views/CrowdfundingDetail.vue') },
+  { path: '/crowdfunding-orders', name: 'CrowdfundingOrders', component: () => import('@/views/CrowdfundingOrders.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/crowdfundings', name: 'AdminCrowdfundings', component: () => import('@/views/AdminCrowdfundings.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

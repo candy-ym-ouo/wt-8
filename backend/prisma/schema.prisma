@@ -39,6 +39,9 @@ model User {
   reviewedCollaborations Collaboration[] @relation("CollaborationReviewer")
   collaborationApplications CollaborationApplication[]
   reviewedCollaborationApplications CollaborationApplication[] @relation("CollaborationApplicationReviewer")
+  createdCrowdfundings Crowdfunding[]
+  reviewedCrowdfundings Crowdfunding[] @relation("CrowdfundingReviewer")
+  crowdfundingOrders CrowdfundingOrder[]
 }
 
 model Collaboration {
@@ -538,4 +541,87 @@ model FeaturedCollection {
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model Crowdfunding {
+  id              Int                 @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  category        String              @default("ZINE")
+  tags            String              @default("[]")
+  targetAmount    Float               @default(0)
+  currentAmount   Float               @default(0)
+  backerCount     Int                 @default(0)
+  deadline        DateTime?
+  startTime       DateTime?
+  status          String              @default("DRAFT")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?               @relation("CrowdfundingReviewer", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
+  isFeatured      Boolean             @default(false)
+  sortOrder       Int                 @default(0)
+  viewCount       Int                 @default(0)
+  stockThreshold  Int                 @default(0)
+  lowStockAlert   Boolean             @default(false)
+  creatorId       Int
+  creator         User                @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  tiers           CrowdfundingTier[]
+  orders          CrowdfundingOrder[]
+}
+
+model CrowdfundingTier {
+  id              Int                 @id @default(autoincrement())
+  crowdfundingId  Int
+  crowdfunding    Crowdfunding        @relation(fields: [crowdfundingId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  price           Float
+  stock           Int                 @default(0)
+  soldCount       Int                 @default(0)
+  sortOrder       Int                 @default(0)
+  deliveryDate    DateTime?
+  perks           String              @default("[]")
+  isUnlimited     Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  orders          CrowdfundingOrder[]
+
+  @@index([crowdfundingId])
+}
+
+model CrowdfundingOrder {
+  id              Int                 @id @default(autoincrement())
+  orderNo         String              @unique
+  crowdfundingId  Int
+  crowdfunding    Crowdfunding        @relation(fields: [crowdfundingId], references: [id])
+  tierId          Int
+  tier            CrowdfundingTier    @relation(fields: [tierId], references: [id])
+  userId          Int
+  user            User                @relation(fields: [userId], references: [id])
+  amount          Float
+  quantity        Int                 @default(1)
+  status          String              @default("PENDING")
+  receiverName    String?
+  receiverPhone   String?
+  receiverAddress String?
+  remark          String?
+  paymentMethod   String              @default("BALANCE")
+  paidAt          DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  trackingNumber  String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([crowdfundingId])
+  @@index([userId])
+  @@index([status])
 }
