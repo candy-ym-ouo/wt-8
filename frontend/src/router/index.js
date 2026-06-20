@@ -38,6 +38,8 @@ const routes = [
   { path: '/admin/crowdfundings', name: 'AdminCrowdfundings', component: () => import('@/views/AdminCrowdfundings.vue'), meta: { requiresAdmin: true } },
   { path: '/report-center', name: 'ReportCenter', component: () => import('@/views/ReportCenter.vue'), meta: { requiresAuth: true } },
   { path: '/admin/reports', name: 'AdminReports', component: () => import('@/views/AdminReports.vue'), meta: { requiresAdmin: true } },
+  { path: '/calendar', name: 'CalendarView', component: () => import('@/views/CalendarView.vue') },
+  { path: '/admin/calendar', name: 'AdminCalendar', component: () => import('@/views/AdminCalendar.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

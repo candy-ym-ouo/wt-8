@@ -13,6 +13,7 @@
         <router-link to="/topics" class="nav-link" active-class="active">专题征稿</router-link>
         <router-link to="/collaborations" class="nav-link" active-class="active">创作者合作</router-link>
         <router-link to="/crowdfundings" class="nav-link" active-class="active">众筹预售</router-link>
+        <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
         <template v-if="authStore.isAuthenticated">
           <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
           <router-link to="/topic-submissions" class="nav-link" active-class="active">专题投稿</router-link>
@@ -53,6 +54,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/reports" class="menu-item">
                 <span>🛡️</span> 举报管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/calendar" class="menu-item">
+                <span>📅</span> 日历管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">

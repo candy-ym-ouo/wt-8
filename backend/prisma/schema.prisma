@@ -48,6 +48,9 @@ model User {
   appeals Appeal[] @relation("AppealAppellant")
   handledAppeals Appeal[] @relation("AppealHandler")
   reportLogs ReportLog[]
+  calendarEvents CreationCalendar[]
+  calendarReminders CalendarReminder[]
+  calendarSubscriptions CalendarSubscription[]
 }
 
 model Collaboration {
@@ -707,4 +710,61 @@ model ReportLog {
   @@index([reportId])
   @@index([appealId])
   @@index([createdAt])
+}
+
+model CreationCalendar {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String?
+  eventType       String   @default("SCHEDULE")
+  startDate       DateTime
+  endDate         DateTime?
+  color           String   @default("#d4624a")
+  status          String   @default("ACTIVE")
+  isAllDay        Boolean  @default(true)
+  reminderEnabled Boolean  @default(false)
+  reminderMinutes Int      @default(30)
+  linkType        String?
+  linkId          Int?
+  creatorId       Int
+  creator         User     @relation(fields: [creatorId], references: [id])
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reminders       CalendarReminder[]
+  subscriptions   CalendarSubscription[]
+
+  @@index([creatorId])
+  @@index([startDate])
+  @@index([eventType])
+  @@index([status])
+}
+
+model CalendarReminder {
+  id              Int              @id @default(autoincrement())
+  calendarEventId Int
+  calendarEvent   CreationCalendar @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
+  userId          Int
+  user            User             @relation(fields: [userId], references: [id])
+  remindAt        DateTime
+  isSent          Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  @@unique([calendarEventId, userId])
+  @@index([userId])
+  @@index([remindAt])
+  @@index([isSent])
+}
+
+model CalendarSubscription {
+  id              Int              @id @default(autoincrement())
+  calendarEventId Int
+  calendarEvent   CreationCalendar @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
+  userId          Int
+  user            User             @relation(fields: [userId], references: [id])
+  createdAt       DateTime         @default(now())
+
+  @@unique([calendarEventId, userId])
+  @@index([userId])
 }
