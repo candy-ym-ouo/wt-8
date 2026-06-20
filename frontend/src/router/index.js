@@ -52,6 +52,9 @@ const routes = [
   { path: '/exclusive-zines', name: 'ExclusiveZines', component: () => import('@/views/ExclusiveZines.vue') },
   { path: '/early-access', name: 'EarlyAccess', component: () => import('@/views/EarlyAccess.vue') },
   { path: '/admin/memberships', name: 'AdminMemberships', component: () => import('@/views/AdminMemberships.vue'), meta: { requiresAdmin: true } },
+  { path: '/interviews', name: 'Interviews', component: () => import('@/views/Interviews.vue') },
+  { path: '/interviews/:id', name: 'InterviewDetail', component: () => import('@/views/InterviewDetail.vue') },
+  { path: '/admin/interviews', name: 'AdminInterviews', component: () => import('@/views/AdminInterviews.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

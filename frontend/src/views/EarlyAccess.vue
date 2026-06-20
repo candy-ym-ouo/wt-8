@@ -33,8 +33,11 @@
           </div>
           <div class="early-content">
             <div class="early-time-info">
-              <span v-if="!isPublished(item)" class="countdown">
-                ⏱ 距离发布：{{ getCountdown(item) }}
+              <span v-if="item.accessPhase === 'NOT_OPEN'" class="not-open-tag">
+                ⏳ {{ getWindowCountdown(item) }}后开放提前阅读
+              </span>
+              <span v-else-if="item.accessPhase === 'EARLY_WINDOW'" class="countdown">
+                ⚡ 提前阅读中 · 距离正式发布：{{ getCountdown(item) }}
               </span>
               <span v-else class="published-tag">
                 ✓ 已发布
@@ -82,23 +85,62 @@
         </div>
         <div class="modal-body early-detail-body">
           <div v-if="!hasAccess" class="access-denied">
-            <div class="denied-icon">🔒</div>
+            <div class="denied-icon" :class="getDeniedIconClass()">{{ getDeniedIcon() }}</div>
             <h4 class="denied-title">{{ accessError }}</h4>
-            <div v-if="!isPublished(currentItem)" class="denied-subtitle text-sm text-muted">
-              正式发布时间：{{ formatDateTime(currentItem?.publishDate) }}
+            <div v-if="denialInfo.accessPhase === 'NOT_OPEN'" class="denied-timeline">
+              <div class="timeline-item">
+                <span class="timeline-marker"></span>
+                <div>
+                  <div class="timeline-label">提前阅读开放时间</div>
+                  <div class="timeline-value">{{ formatDateTime(denialInfo.earlyWindowStart) }}</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-marker published"></span>
+                <div>
+                  <div class="timeline-label">正式发布时间（所有人可读）</div>
+                  <div class="timeline-value">{{ formatDateTime(denialInfo.publishDate) }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="denialInfo.accessPhase === 'EARLY_WINDOW'" class="denied-requirement">
+              <div v-if="denialInfo.denialCode === 'INSUFFICIENT_LEVEL'" class="requirement-row">
+                <span>要求等级：</span>
+                <span class="requirement-value need">Lv.{{ denialInfo.requiresLevel }}</span>
+                <span>当前：</span>
+                <span class="requirement-value current">Lv.{{ denialInfo.userLevel }}</span>
+              </div>
+              <div v-if="denialInfo.denialCode === 'MEMBERSHIP_REQUIRED'" class="requirement-row">
+                <span>会员要求：</span>
+                <span class="requirement-value need">需要会员</span>
+                <span>当前：</span>
+                <span class="requirement-value current">{{ denialInfo.hasMembership ? '已开通' : '未开通' }}</span>
+              </div>
+              <div class="text-sm text-muted mt-sm">
+                正式发布时间：{{ formatDateTime(denialInfo.publishDate) }}
+              </div>
             </div>
             <div class="denied-actions">
-              <button class="btn btn-primary" @click="$router.push('/membership')">升级会员</button>
-              <button class="btn btn-secondary" @click="$router.push('/growth')">提升等级</button>
+              <button
+                v-if="denialInfo.denialCode === 'MEMBERSHIP_REQUIRED'"
+                class="btn btn-primary"
+                @click="$router.push('/membership')"
+              >开通会员</button>
+              <button
+                v-if="denialInfo.denialCode === 'INSUFFICIENT_LEVEL'"
+                class="btn btn-primary"
+                @click="$router.push('/growth')"
+              >提升等级</button>
+              <button class="btn btn-secondary" @click="closeDetail">关闭</button>
             </div>
           </div>
           <div v-else>
             <div class="detail-status-bar">
-              <span :class="['status-tag', isPublished(currentItem) ? 'published' : 'early']">
-                {{ isPublished(currentItem) ? '📖 已公开发布' : '⚡ 提前阅读中' }}
+              <span :class="['status-tag', detailAccessPhase === 'PUBLISHED' ? 'published' : 'early']">
+                {{ detailAccessPhase === 'PUBLISHED' ? '📖 已公开发布' : '⚡ 提前阅读中' }}
               </span>
-              <span v-if="!isPublished(currentItem)" class="text-sm text-muted">
-                正式发布：{{ formatDateTime(currentItem?.publishDate) }}
+              <span v-if="detailAccessPhase !== 'PUBLISHED'" class="text-sm text-muted">
+                正式发布：{{ formatDateTime(currentItem?.publishDate || detailPublishDate) }}
               </span>
             </div>
             <div v-if="currentItem?.coverImage" class="detail-cover">
@@ -126,6 +168,9 @@ const showDetail = ref(false)
 const currentItem = ref(null)
 const hasAccess = ref(false)
 const accessError = ref('')
+const detailAccessPhase = ref(null)
+const detailPublishDate = ref(null)
+const denialInfo = ref({})
 const now = ref(new Date())
 
 let timer = null
@@ -147,20 +192,25 @@ const renderContent = (content) => {
   return content.replace(/\n/g, '<br>')
 }
 
-const isPublished = (item) => {
-  if (!item) return false
-  return now.value >= new Date(item.publishDate)
+const getAccessPhase = (item) => {
+  if (item && item.accessPhase) return item.accessPhase
+  if (!item) return 'NOT_OPEN'
+  const publishDate = new Date(item.publishDate)
+  const earlyWindowStart = new Date(publishDate.getTime() - item.earlyHours * 60 * 60 * 1000)
+  if (now.value >= publishDate) return 'PUBLISHED'
+  if (now.value >= earlyWindowStart) return 'EARLY_WINDOW'
+  return 'NOT_OPEN'
 }
 
 const getPublishStatus = (item) => {
-  if (isPublished(item)) {
+  const phase = getAccessPhase(item)
+  if (phase === 'PUBLISHED') {
     return { text: '已发布', class: 'published' }
   }
-  const earlyStart = new Date(new Date(item.publishDate).getTime() - item.earlyHours * 60 * 60 * 1000)
-  if (now.value >= earlyStart) {
+  if (phase === 'EARLY_WINDOW') {
     return { text: '提前阅读', class: 'early' }
   }
-  return { text: '待发布', class: 'pending' }
+  return { text: '未开放', class: 'not-open' }
 }
 
 const getCountdown = (item) => {
@@ -172,6 +222,33 @@ const getCountdown = (item) => {
   if (days > 0) return `${days}天${hours}小时`
   if (hours > 0) return `${hours}小时${minutes}分钟`
   return `${minutes}分钟`
+}
+
+const getWindowCountdown = (item) => {
+  const publishDate = new Date(item.publishDate)
+  const earlyWindowStart = new Date(publishDate.getTime() - item.earlyHours * 60 * 60 * 1000)
+  const diff = earlyWindowStart.getTime() - now.value.getTime()
+  if (diff <= 0) return '已开放'
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.max(1, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)))
+  if (days > 0) return `${days}天${hours}小时`
+  if (hours > 0) return `${hours}小时${minutes}分`
+  return `${minutes}分钟`
+}
+
+const getDeniedIcon = () => {
+  if (denialInfo.value.denialCode === 'WINDOW_NOT_OPEN') return '⏳'
+  if (denialInfo.value.denialCode === 'INSUFFICIENT_LEVEL') return '📊'
+  if (denialInfo.value.denialCode === 'MEMBERSHIP_REQUIRED') return '👑'
+  return '🔒'
+}
+
+const getDeniedIconClass = () => {
+  if (denialInfo.value.denialCode === 'WINDOW_NOT_OPEN') return 'icon-not-open'
+  if (denialInfo.value.denialCode === 'INSUFFICIENT_LEVEL') return 'icon-level'
+  if (denialInfo.value.denialCode === 'MEMBERSHIP_REQUIRED') return 'icon-member'
+  return ''
 }
 
 const loadItems = async (p = 1) => {
@@ -192,13 +269,27 @@ const openItem = async (item) => {
   try {
     const res = await api.get(`/memberships/early-access/${item.id}`)
     currentItem.value = res.item
+    detailAccessPhase.value = res.accessPhase || (res.isPublished ? 'PUBLISHED' : 'EARLY_WINDOW')
+    detailPublishDate.value = res.publishDate || item.publishDate
     hasAccess.value = true
+    denialInfo.value = {}
     showDetail.value = true
   } catch (e) {
     if (e.status === 403) {
       currentItem.value = item
       hasAccess.value = false
       accessError.value = e.error || '您没有权限阅读此内容'
+      detailAccessPhase.value = e.accessPhase || 'NOT_OPEN'
+      denialInfo.value = {
+        denialCode: e.denialCode,
+        accessPhase: e.accessPhase || 'NOT_OPEN',
+        earlyWindowStart: e.earlyWindowStart,
+        publishDate: e.publishDate || item.publishDate,
+        requiresLevel: e.requiresLevel,
+        userLevel: e.userLevel,
+        requiresMembership: e.requiresMembership,
+        hasMembership: e.hasMembership
+      }
       showDetail.value = true
     } else {
       showToast(e.error || '加载失败', 'error')
@@ -209,6 +300,8 @@ const openItem = async (item) => {
 const closeDetail = () => {
   showDetail.value = false
   currentItem.value = null
+  denialInfo.value = {}
+  detailAccessPhase.value = null
 }
 
 onMounted(() => {
@@ -264,6 +357,7 @@ onUnmounted(() => {
 }
 .early-status.published { background: var(--success); }
 .early-status.early { background: var(--accent); }
+.early-status.not-open { background: #6b7280; }
 .early-status.pending { background: var(--text-tertiary); }
 .early-badges {
   position: absolute;
@@ -295,6 +389,11 @@ onUnmounted(() => {
 }
 .countdown {
   color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+}
+.not-open-tag {
+  color: #6b7280;
   font-weight: 600;
   font-size: 13px;
 }
@@ -396,11 +495,19 @@ onUnmounted(() => {
   font-size: 64px;
   margin-bottom: 16px;
 }
+.denied-icon.icon-not-open { animation: pulse 2s infinite; }
+.denied-icon.icon-level { color: #8b5cf6; }
+.denied-icon.icon-member { color: var(--accent); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
 .denied-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--text-secondary);
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 .denied-subtitle {
   margin-bottom: 20px;
@@ -409,5 +516,72 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   gap: 12px;
+}
+.denied-timeline {
+  max-width: 400px;
+  margin: 0 auto 24px;
+  text-align: left;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border-left: 3px solid #6b7280;
+}
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+.timeline-item + .timeline-item {
+  border-top: 1px dashed var(--border-color);
+}
+.timeline-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6b7280;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.timeline-marker.published {
+  background: var(--success);
+}
+.timeline-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+.timeline-value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+.denied-requirement {
+  max-width: 400px;
+  margin: 0 auto 24px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  text-align: left;
+}
+.requirement-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-size: 14px;
+}
+.requirement-value {
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.requirement-value.need {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.requirement-value.current {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 </style>

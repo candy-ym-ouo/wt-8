@@ -66,6 +66,11 @@ model User {
   benefitCheckLogs BenefitCheckLog[]
   exclusiveZines  ExclusiveZine[]
   earlyAccesses   EarlyAccess[]
+  createdInterviews Interview[]
+  reviewedInterviews Interview[] @relation("InterviewReviewer")
+  interviewComments InterviewComment[]
+  interviewSchedules InterviewSchedule[]
+  interviewedAs   Interview[] @relation("InterviewAuthor")
 }
 
 model Collaboration {
@@ -139,6 +144,7 @@ model Zine {
   swapListingsAsHave SwapListing[] @relation("HaveZine")
   swapListingsAsWant SwapListing[] @relation("WantZine")
   earlyAccesses EarlyAccess[]
+  interviewZines InterviewZine[]
 }
 
 model Submission {
@@ -1111,4 +1117,104 @@ model MembershipConfig {
   value          String
   description    String?
   updatedAt      DateTime  @updatedAt
+}
+
+model Interview {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  content         String
+  category        String    @default("CREATOR")
+  tags            String    @default("[]")
+  authorName      String
+  authorAvatar    String?
+  authorBio       String?
+  authorUserId    Int?
+  authorUser      User?     @relation("InterviewAuthor", fields: [authorUserId], references: [id])
+  interviewerName String?
+  publishDate     DateTime?
+  status          String    @default("DRAFT")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?     @relation("InterviewReviewer", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
+  isFeatured      Boolean   @default(false)
+  sortOrder       Int       @default(0)
+  viewCount       Int       @default(0)
+  likeCount       Int       @default(0)
+  commentCount    Int       @default(0)
+  creatorId       Int
+  creator         User      @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  zines           InterviewZine[]
+  comments        InterviewComment[]
+  schedules       InterviewSchedule[]
+  featured        FeaturedInterview?
+}
+
+model InterviewZine {
+  id              Int       @id @default(autoincrement())
+  interviewId     Int
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  zineId          Int
+  zine            Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  sortOrder       Int       @default(0)
+  recommendNote   String?
+  addedAt         DateTime  @default(now())
+
+  @@unique([interviewId, zineId])
+}
+
+model InterviewComment {
+  id              Int       @id @default(autoincrement())
+  interviewId     Int
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  userId          Int
+  user            User      @relation(fields: [userId], references: [id])
+  content         String
+  isPinned        Boolean   @default(false)
+  status          String    @default("APPROVED")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([interviewId])
+  @@index([userId])
+  @@index([status])
+}
+
+model InterviewSchedule {
+  id              Int       @id @default(autoincrement())
+  interviewId     Int
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  scheduledAt     DateTime
+  status          String    @default("PENDING")
+  note            String?
+  creatorId       Int
+  creator         User      @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([interviewId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model FeaturedInterview {
+  id              Int       @id @default(autoincrement())
+  interviewId     Int       @unique
+  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  bannerImage     String?
+  bannerTitle     String?
+  bannerSubtitle  String?
+  sortOrder       Int       @default(0)
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }

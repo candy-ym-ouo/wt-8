@@ -14,6 +14,7 @@
         <router-link to="/collaborations" class="nav-link" active-class="active">创作者合作</router-link>
         <router-link to="/crowdfundings" class="nav-link" active-class="active">众筹预售</router-link>
         <router-link to="/swap" class="nav-link" active-class="active">交换市集</router-link>
+        <router-link to="/interviews" class="nav-link" active-class="active">作者访谈</router-link>
         <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
         <router-link to="/exclusive-zines" class="nav-link" active-class="active">专属刊物</router-link>
         <router-link to="/early-access" class="nav-link" active-class="active">提前阅读</router-link>
@@ -76,6 +77,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/memberships" class="menu-item">
                 <span>👑</span> 会员管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/interviews" class="menu-item">
+                <span>💬</span> 访谈管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">

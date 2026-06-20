@@ -43,6 +43,16 @@ async function routes(fastify, options) {
     return `MB${timestamp}${random}`;
   };
 
+  const formatDateTime = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}/${month}/${day} ${hours}:${minutes}`;
+  };
+
   fastify.get('/plans', async () => {
     const plans = await prisma.membershipPlan.findMany({
       where: { isActive: true },
@@ -295,8 +305,25 @@ async function routes(fastify, options) {
       prisma.earlyAccess.count({ where: { status: { in: ['PENDING', 'PUBLISHED'] } } })
     ]);
 
+    const now = new Date();
+    const itemsWithStatus = items.map(item => {
+      const publishDate = new Date(item.publishDate);
+      const earlyWindowStart = new Date(publishDate.getTime() - item.earlyHours * 60 * 60 * 1000);
+      let accessPhase = 'NOT_OPEN';
+      if (now >= publishDate) {
+        accessPhase = 'PUBLISHED';
+      } else if (now >= earlyWindowStart) {
+        accessPhase = 'EARLY_WINDOW';
+      }
+      return {
+        ...item,
+        earlyWindowStart,
+        accessPhase
+      };
+    });
+
     return {
-      items,
+      items: itemsWithStatus,
       total,
       page: Number(page),
       totalPages: Math.ceil(total / limit)
@@ -318,27 +345,48 @@ async function routes(fastify, options) {
 
     const now = new Date();
     const publishDate = new Date(item.publishDate);
-    const earlyDeadline = new Date(publishDate.getTime() + item.earlyHours * 60 * 60 * 1000);
-    const isPublished = now >= publishDate;
+    const earlyWindowStart = new Date(publishDate.getTime() - item.earlyHours * 60 * 60 * 1000);
+
+    let accessPhase;
+    if (now >= publishDate) {
+      accessPhase = 'PUBLISHED';
+    } else if (now >= earlyWindowStart) {
+      accessPhase = 'EARLY_WINDOW';
+    } else {
+      accessPhase = 'NOT_OPEN';
+    }
 
     const userLevel = await getUserLevel(request.user.id);
     const membership = await hasActiveMembership(request.user.id);
 
     let hasAccess = false;
     let denialReason = null;
+    let denialCode = null;
 
-    if (!isPublished) {
+    if (accessPhase === 'PUBLISHED') {
+      hasAccess = true;
+    } else if (accessPhase === 'EARLY_WINDOW') {
       if (item.minLevel <= userLevel && (!item.requirePlan || membership)) {
         hasAccess = true;
       } else if (item.minLevel > userLevel) {
-        denialReason = `需要等级 Lv.${item.minLevel} 才能提前阅读`;
+        denialReason = `提前阅读需要等级 Lv.${item.minLevel}，当前等级 Lv.${userLevel}`;
+        denialCode = 'INSUFFICIENT_LEVEL';
       } else if (item.requirePlan && !membership) {
-        denialReason = '需要开通会员才能提前阅读';
-      } else {
-        denialReason = '内容尚未发布';
+        denialReason = '提前阅读需要开通会员';
+        denialCode = 'MEMBERSHIP_REQUIRED';
       }
     } else {
-      hasAccess = true;
+      const hoursToWindow = Math.ceil((earlyWindowStart - now) / (1000 * 60 * 60));
+      if (hoursToWindow > 24) {
+        const daysToWindow = Math.ceil(hoursToWindow / 24);
+        denialReason = `提前阅读尚未开放，距离开放还有约 ${daysToWindow} 天（${formatDateTime(earlyWindowStart)} 开始）`;
+      } else if (hoursToWindow > 1) {
+        denialReason = `提前阅读尚未开放，距离开放还有约 ${hoursToWindow} 小时（${formatDateTime(earlyWindowStart)} 开始）`;
+      } else {
+        const minutesToWindow = Math.ceil((earlyWindowStart - now) / (1000 * 60));
+        denialReason = `提前阅读尚未开放，距离开放还有约 ${minutesToWindow} 分钟（${formatDateTime(earlyWindowStart)} 开始）`;
+      }
+      denialCode = 'WINDOW_NOT_OPEN';
     }
 
     await prisma.benefitCheckLog.create({
@@ -355,11 +403,16 @@ async function routes(fastify, options) {
     if (!hasAccess) {
       return reply.code(403).send({
         error: denialReason,
+        denialCode,
         publishDate: item.publishDate,
+        earlyWindowStart: earlyWindowStart.toISOString(),
         earlyHours: item.earlyHours,
         requiresLevel: item.minLevel,
+        userLevel,
         requiresMembership: item.requirePlan,
-        isPublished
+        hasMembership: !!membership,
+        accessPhase,
+        isPublished: accessPhase === 'PUBLISHED'
       });
     }
 
@@ -368,28 +421,50 @@ async function routes(fastify, options) {
       data: { views: { increment: 1 } }
     });
 
-    return { item, isPublished, earlyDeadline };
+    return {
+      item,
+      accessPhase,
+      isPublished: accessPhase === 'PUBLISHED',
+      publishDate: item.publishDate,
+      earlyWindowStart: earlyWindowStart.toISOString()
+    };
   });
 
   fastify.get('/benefits/check', { preHandler: [fastify.authenticate] }, async (request) => {
     const { benefitCode, resourceType, resourceId } = request.query;
+    const now = new Date();
     const userLevel = await getUserLevel(request.user.id);
     const membership = await hasActiveMembership(request.user.id);
 
     let hasAccess = true;
     let denialReason = null;
+    let accessPhase = null;
+    let earlyWindowStart = null;
+    let publishDate = null;
 
     if (benefitCode === 'EARLY_ACCESS' || benefitCode === 'EXCLUSIVE_READ') {
       if (resourceType === 'EARLY_ACCESS' && resourceId) {
         const item = await prisma.earlyAccess.findUnique({ where: { id: Number(resourceId) } });
         if (item) {
-          if (item.minLevel > userLevel) {
+          publishDate = new Date(item.publishDate);
+          earlyWindowStart = new Date(publishDate.getTime() - item.earlyHours * 60 * 60 * 1000);
+
+          if (now >= publishDate) {
+            accessPhase = 'PUBLISHED';
+            hasAccess = true;
+          } else if (now >= earlyWindowStart) {
+            accessPhase = 'EARLY_WINDOW';
+            if (item.minLevel > userLevel) {
+              hasAccess = false;
+              denialReason = `提前阅读需要等级 Lv.${item.minLevel}`;
+            } else if (item.requirePlan && !membership) {
+              hasAccess = false;
+              denialReason = '提前阅读需要开通会员';
+            }
+          } else {
+            accessPhase = 'NOT_OPEN';
             hasAccess = false;
-            denialReason = `需要等级 Lv.${item.minLevel}`;
-          }
-          if (item.requirePlan && !membership) {
-            hasAccess = false;
-            denialReason = '需要开通会员';
+            denialReason = `提前阅读尚未开放，${formatDateTime(earlyWindowStart)} 开始`;
           }
         }
       }
@@ -399,8 +474,7 @@ async function routes(fastify, options) {
           if (zine.minLevel > userLevel) {
             hasAccess = false;
             denialReason = `需要等级 Lv.${zine.minLevel}`;
-          }
-          if (zine.requirePlan && !membership) {
+          } else if (zine.requirePlan && !membership) {
             hasAccess = false;
             denialReason = '需要开通会员';
           }
@@ -422,6 +496,9 @@ async function routes(fastify, options) {
     return {
       hasAccess,
       denialReason,
+      accessPhase,
+      earlyWindowStart: earlyWindowStart ? earlyWindowStart.toISOString() : null,
+      publishDate: publishDate ? publishDate.toISOString() : null,
       userLevel,
       hasMembership: !!membership
     };
