@@ -703,7 +703,11 @@ const submitFeaturedForm = async () => {
       await api.put(`/admin/collections/featured/${editingFeatured.value.id}`, featuredForm.value)
       showToast('更新成功', 'success')
     } else {
-      await api.post('/admin/collections/featured', featuredForm.value)
+      const res = await api.post('/admin/collections/featured', featuredForm.value)
+      if (res.error) {
+        showToast(res.error, 'error')
+        return
+      }
       showToast('添加成功', 'success')
     }
     showFeaturedForm.value = false

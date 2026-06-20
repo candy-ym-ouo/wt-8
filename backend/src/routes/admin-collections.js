@@ -360,7 +360,7 @@ async function routes(fastify, options) {
     return { featured };
   });
 
-  fastify.post('/featured', async (request) => {
+  fastify.post('/featured', async (request, reply) => {
     const {
       collectionId,
       bannerImage,
@@ -377,7 +377,7 @@ async function routes(fastify, options) {
     });
 
     if (existing) {
-      return { error: '该合集已在精选推荐中' };
+      return reply.code(400).send({ error: '该合集已在精选推荐中' });
     }
 
     const featured = await prisma.featuredCollection.create({
