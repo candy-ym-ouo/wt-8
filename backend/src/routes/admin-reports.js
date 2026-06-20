@@ -216,7 +216,7 @@ async function routes(fastify, options) {
           senderId: request.user.id,
           receiverId: report.reporterId,
           title: '举报处理结果通知',
-          content: `您提交的${typeLabels[report.type] || ''}举报已处理完毕，处理结果：${statusLabels[newStatus] || newStatus}。${handleNote ? `处理说明：${handleNote}` : ''}`,
+          content: `您提交的${typeLabels[report.type] || ''}举报已处理完毕，处理结果：${statusLabels[newStatus] || newStatus}。${handleNote ? `处理说明：${handleNote}` : ''}[report:${reportId}]`,
           type: 'REPORT'
         }
       });
@@ -229,7 +229,7 @@ async function routes(fastify, options) {
           senderId: request.user.id,
           receiverId: report.targetUserId,
           title: '违规处理通知',
-          content: `您的内容/行为因被举报已受到处理，处罚类型：${penaltyLabels[penaltyType] || penaltyType}。${penaltyDetail ? `详情：${penaltyDetail}` : ''}。如对处理结果有异议，可在举报中心提交申诉。`,
+          content: `您的内容/行为因被举报已受到处理，处罚类型：${penaltyLabels[penaltyType] || penaltyType}。${penaltyDetail ? `详情：${penaltyDetail}` : ''}。如对处理结果有异议，可在举报中心提交申诉。[report:${reportId}]`,
           type: 'REPORT'
         }
       });
@@ -365,7 +365,7 @@ async function routes(fastify, options) {
         senderId: request.user.id,
         receiverId: appeal.appellantId,
         title: '申诉处理结果通知',
-        content: `您的申诉已处理完毕，结果：${newStatus === 'APPROVED' ? '申诉成立，已变更原处理' : '申诉不成立，维持原处理'}。${handleNote ? `处理说明：${handleNote}` : ''}`,
+        content: `您的申诉已处理完毕，结果：${newStatus === 'APPROVED' ? '申诉成立，已变更原处理' : '申诉不成立，维持原处理'}。${handleNote ? `处理说明：${handleNote}` : ''}[report:${appeal.reportId}]`,
         type: 'REPORT'
       }
     });

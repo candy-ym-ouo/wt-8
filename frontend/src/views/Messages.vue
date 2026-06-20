@@ -87,6 +87,13 @@
             <div class="msg-content" v-html="formatContent(selected.content)"></div>
           </div>
           <div class="detail-footer">
+            <router-link
+              v-if="selected.type === 'REPORT' && extractReportId(selected.content)"
+              :to="`/report-center?reportId=${extractReportId(selected.content)}`"
+              class="btn btn-primary btn-sm"
+            >
+              🛡️ 查看举报详情
+            </router-link>
             <button
               v-if="selected.type === 'USER' && selected.senderId !== authStore.user?.id"
               class="btn btn-secondary btn-sm"
@@ -294,6 +301,11 @@ const formatFullDate = (date) => {
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ')
 
+const extractReportId = (content) => {
+  const match = content && content.match(/\[report:(\d+)\]/)
+  return match ? match[1] : null
+}
+
 const getTypeLabel = (type) => {
   const map = {
     SYSTEM: '系统通知',
@@ -307,6 +319,7 @@ const getTypeLabel = (type) => {
 
 const formatContent = (text) => {
   return text
+    .replace(/\[report:\d+\]/g, '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .split('\n').map(l => l ? `<p>${l}</p>` : '<br>').join('')
 }

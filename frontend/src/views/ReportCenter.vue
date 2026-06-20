@@ -158,6 +158,79 @@
       </div>
     </div>
 
+    <div v-if="currentTab === 'against-me'" class="section">
+      <div class="flex justify-between items-center mb">
+        <div class="filter-tabs flex gap-sm">
+          <button
+            v-for="f in againstMeStatusFilters"
+            :key="f.value"
+            :class="['btn', againstMeStatus === f.value ? 'btn-primary' : 'btn-secondary', 'btn-sm']"
+            @click="againstMeStatus = f.value; loadAgainstMe(1)"
+          >
+            {{ f.label }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="loadingAgainstMe" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else-if="againstMeReports.length === 0" class="empty-state card" style="padding: 48px;">
+        <div class="empty-state-icon">🔔</div>
+        <div class="empty-state-text">暂无针对您的举报记录</div>
+      </div>
+      <div v-else class="report-list">
+        <div v-for="r in againstMeReports" :key="r.id" class="report-card card" @click="viewReport(r, 'target')">
+          <div class="rc-header">
+            <div class="rc-title-row">
+              <span :class="['status-badge', `status-${r.status.toLowerCase()}`]">
+                {{ statusLabel(r.status) }}
+              </span>
+              <span class="rc-type tag">{{ typeLabel(r.type) }}</span>
+              <span v-if="r.penaltyType" class="tag tag-danger">{{ penaltyLabel(r.penaltyType) }}</span>
+            </div>
+            <div class="rc-meta text-sm text-muted">
+              {{ formatDateTime(r.createdAt) }}
+            </div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-reason font-medium">{{ r.reason }}</div>
+            <div class="rc-target text-sm text-muted">
+              {{ targetLabel(r.targetType) }} #{{ r.targetId }}
+              <span v-if="r.targetTitle">· {{ r.targetTitle }}</span>
+            </div>
+            <div v-if="r.handleNote" class="rc-desc text-sm text-muted">
+              处理说明：{{ r.handleNote }}
+            </div>
+          </div>
+          <div class="rc-footer">
+            <div v-if="r.handler" class="rc-handler text-sm">
+              处理人：{{ r.handler.username }}
+            </div>
+            <div v-if="r.handleResult" class="rc-result text-sm">
+              处理结果：{{ handleResultLabel(r.handleResult) }}
+            </div>
+            <div class="rc-actions">
+              <button
+                v-if="r.status === 'RESOLVED' || r.status === 'PENALIZED'"
+                class="btn btn-primary btn-sm"
+                @click.stop="openAppealModal(r)"
+              >
+                🔄 申诉
+              </button>
+              <span v-if="r.appeals && r.appeals.length > 0" class="text-sm text-muted">
+                已申诉
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="againstMeTotalPages > 1" class="pagination">
+        <button class="page-btn" :disabled="againstMePage === 1" @click="loadAgainstMe(againstMePage - 1)">←</button>
+        <span class="page-info">第 {{ againstMePage }} / {{ againstMeTotalPages }} 页</span>
+        <button class="page-btn" :disabled="againstMePage === againstMeTotalPages" @click="loadAgainstMe(againstMePage + 1)">→</button>
+      </div>
+    </div>
+
     <div v-if="currentTab === 'my-appeals'" class="section">
       <div class="flex justify-between items-center mb">
         <div class="filter-tabs flex gap-sm">
@@ -211,7 +284,7 @@
     <div v-if="currentTab === 'detail' && selectedReport" class="section">
       <div class="card" style="padding: 24px;">
         <div class="detail-back">
-          <button class="btn btn-ghost btn-sm" @click="currentTab = 'my-reports'">← 返回列表</button>
+          <button class="btn btn-ghost btn-sm" @click="currentTab = detailRole === 'target' ? 'against-me' : 'my-reports'">← 返回列表</button>
         </div>
 
         <div class="detail-header">
@@ -220,6 +293,8 @@
             <span :class="['status-badge', `status-${selectedReport.status.toLowerCase()}`]">
               {{ statusLabel(selectedReport.status) }}
             </span>
+            <span v-if="detailRole === 'target'" class="tag tag-role">被举报方</span>
+            <span v-else class="tag">举报方</span>
           </div>
           <div class="detail-meta text-sm text-muted">
             提交时间：{{ formatDateTime(selectedReport.createdAt) }}
@@ -291,14 +366,14 @@
 
         <div class="detail-actions" style="margin-top: 20px;">
           <button
-            v-if="selectedReport.status === 'PENDING'"
+            v-if="detailRole === 'reporter' && selectedReport.status === 'PENDING'"
             class="btn btn-ghost danger-btn"
             @click="cancelReport(selectedReport)"
           >
             撤回举报
           </button>
           <button
-            v-if="selectedReport.status === 'RESOLVED' || selectedReport.status === 'PENALIZED'"
+            v-if="(selectedReport.status === 'RESOLVED' || selectedReport.status === 'PENALIZED') && (detailRole === 'target' || detailRole === 'reporter')"
             class="btn btn-primary"
             @click="openAppealModal(selectedReport)"
           >
@@ -337,15 +412,18 @@
 
 <script setup>
 import { ref, onMounted, inject } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 
+const route = useRoute()
 const authStore = useAuthStore()
 const showToast = inject('showToast')
 
 const tabs = [
   { value: 'submit', label: '提交举报', icon: '📝' },
   { value: 'my-reports', label: '我的举报', icon: '📋' },
+  { value: 'against-me', label: '收到举报', icon: '🔔' },
   { value: 'my-appeals', label: '我的申诉', icon: '🔄' }
 ]
 
@@ -397,6 +475,16 @@ const appealStatusFilters = [
   { label: '已驳回', value: 'REJECTED' }
 ]
 
+const againstMeStatusFilters = [
+  { label: '全部', value: 'all' },
+  { label: '待处理', value: 'PENDING' },
+  { label: '处理中', value: 'PROCESSING' },
+  { label: '申诉中', value: 'APPEALING' },
+  { label: '已处理', value: 'RESOLVED' },
+  { label: '已处罚', value: 'PENALIZED' },
+  { label: '已驳回', value: 'DISMISSED' }
+]
+
 const currentTab = ref('submit')
 const form = ref({
   type: 'CONTENT',
@@ -422,7 +510,14 @@ const appealStatus = ref('all')
 const appealPage = ref(1)
 const appealTotalPages = ref(1)
 
+const againstMeReports = ref([])
+const loadingAgainstMe = ref(false)
+const againstMeStatus = ref('all')
+const againstMePage = ref(1)
+const againstMeTotalPages = ref(1)
+
 const selectedReport = ref(null)
+const detailRole = ref('reporter')
 
 const showAppealModal = ref(false)
 const appealingReport = ref(null)
@@ -498,6 +593,7 @@ const formatDateTime = (d) => {
 const switchTab = (t) => {
   currentTab.value = t
   if (t === 'my-reports') loadMyReports(1)
+  if (t === 'against-me') loadAgainstMe(1)
   if (t === 'my-appeals') loadMyAppeals(1)
 }
 
@@ -559,10 +655,27 @@ const loadMyAppeals = async (newPage = 1) => {
   }
 }
 
-const viewReport = async (r) => {
+const loadAgainstMe = async (newPage = 1) => {
+  loadingAgainstMe.value = true
+  againstMePage.value = newPage
+  try {
+    const params = new URLSearchParams({ page: newPage, limit: 10 })
+    if (againstMeStatus.value !== 'all') params.set('status', againstMeStatus.value)
+    const res = await api.get(`/reports/against-me?${params}`)
+    againstMeReports.value = res.reports
+    againstMeTotalPages.value = res.totalPages
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingAgainstMe.value = false
+  }
+}
+
+const viewReport = async (r, role = 'reporter') => {
   try {
     const res = await api.get(`/reports/${r.id}`)
     selectedReport.value = res.report
+    detailRole.value = res.role || role
     currentTab.value = 'detail'
   } catch (e) {
     showToast(e.error || '加载失败', 'error')
@@ -618,9 +731,21 @@ const submitAppeal = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadMyReports(1)
+  loadAgainstMe(1)
   loadMyAppeals(1)
+
+  if (route.query.reportId) {
+    try {
+      const res = await api.get(`/reports/${route.query.reportId}`)
+      selectedReport.value = res.report
+      detailRole.value = res.role || 'target'
+      currentTab.value = 'detail'
+    } catch (e) {
+      showToast(e.error || '举报记录不存在', 'error')
+    }
+  }
 })
 </script>
 
@@ -738,6 +863,14 @@ onMounted(() => {
   color: var(--text-secondary);
   font-size: 12px;
   border-radius: 100px;
+}
+.tag-danger {
+  background: #fff1f0;
+  color: #cf1322;
+}
+.tag-role {
+  background: #f9f0ff;
+  color: #722ed1;
 }
 
 .appeal-card {

@@ -93,6 +93,31 @@ async function routes(fastify, options) {
     return { reports, total, page: Number(page), totalPages: Math.ceil(total / limit) };
   });
 
+  fastify.get('/against-me', { preHandler: [fastify.authenticate] }, async (request) => {
+    const { status, page = 1, limit = 10 } = request.query;
+    const skip = (page - 1) * limit;
+    const where = { targetUserId: request.user.id };
+
+    if (status && status !== 'all') where.status = status;
+
+    const [reports, total] = await Promise.all([
+      prisma.report.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { createdAt: 'desc' },
+        include: {
+          handler: { select: { id: true, username: true, avatar: true } },
+          reporter: { select: { id: true, username: true, avatar: true } },
+          appeals: { orderBy: { createdAt: 'desc' } }
+        }
+      }),
+      prisma.report.count({ where })
+    ]);
+
+    return { reports, total, page: Number(page), totalPages: Math.ceil(total / limit) };
+  });
+
   fastify.get('/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const report = await prisma.report.findUnique({
       where: { id: Number(request.params.id) },
@@ -118,11 +143,18 @@ async function routes(fastify, options) {
       return reply.code(404).send({ error: '举报记录不存在' });
     }
 
-    if (report.reporterId !== request.user.id && request.user.role !== 'ADMIN') {
+    if (report.reporterId !== request.user.id && report.targetUserId !== request.user.id && request.user.role !== 'ADMIN') {
       return reply.code(403).send({ error: '无权查看此举报' });
     }
 
-    return { report };
+    const isTarget = report.targetUserId === request.user.id && report.reporterId !== request.user.id;
+
+    const result = { report };
+    if (isTarget) {
+      result.role = 'target';
+    }
+
+    return result;
   });
 
   fastify.post('/:id/appeal', { preHandler: [fastify.authenticate] }, async (request, reply) => {
