@@ -36,6 +36,7 @@ model User {
   operatedEventCheckIns EventCheckIn[] @relation("EventCheckInOperator")
   createdCollections Collection[]
   createdCollaborations Collaboration[]
+  reviewedCollaborations Collaboration[] @relation("CollaborationReviewer")
   collaborationApplications CollaborationApplication[]
   reviewedCollaborationApplications CollaborationApplication[] @relation("CollaborationApplicationReviewer")
 }
@@ -52,6 +53,10 @@ model Collaboration {
   compensation    String?
   deadline        DateTime?
   status          String                      @default("DRAFT")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?                       @relation("CollaborationReviewer", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
   isFeatured      Boolean                     @default(false)
   sortOrder       Int                         @default(0)
   viewCount       Int                         @default(0)

@@ -1,8 +1,13 @@
 <template>
   <div class="container">
-    <div class="page-header">
-      <h1 class="page-title">创作者合作</h1>
-      <p class="page-subtitle">发现优质合作机会，与志同道合的创作者共创精彩</p>
+    <div class="page-header flex justify-between items-center">
+      <div>
+        <h1 class="page-title">创作者合作</h1>
+        <p class="page-subtitle">发现优质合作机会，与志同道合的创作者共创精彩</p>
+      </div>
+      <router-link v-if="authStore?.isAuthenticated" to="/collaborations/new" class="btn btn-primary">
+        <span>+</span> 发起合作招募
+      </router-link>
     </div>
 
     <div class="filters card" style="padding: 20px 24px; margin-bottom: 32px;">
@@ -118,8 +123,10 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import api from '@/utils/api'
 
+const authStore = useAuthStore()
 const collaborations = ref([])
 const loading = ref(false)
 const currentCategory = ref('all')
@@ -212,6 +219,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+
 .filter-row {
   display: flex;
   align-items: center;

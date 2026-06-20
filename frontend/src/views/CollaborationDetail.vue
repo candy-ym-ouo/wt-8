@@ -22,8 +22,55 @@
               <span class="cat-badge">{{ getCategoryLabel(collaboration.category) }}</span>
               <span v-if="collaboration.isFeatured" class="featured-badge">⭐ 精选推荐</span>
               <span v-if="isExpired" class="expired-badge">已截止</span>
+              <span :class="['status-badge', `status-${collaboration.status.toLowerCase()}`]">
+                {{ getCollabStatus(collaboration.status) }}
+              </span>
             </div>
             <h1 class="detail-title font-serif">{{ collaboration.title }}</h1>
+            <div v-if="collaboration.rejectionReason && isOwner" class="rejection-notice">
+              <span class="notice-icon">⚠️</span>
+              <div>
+                <strong>审核未通过</strong>
+                <div class="rejection-detail">原因：{{ collaboration.rejectionReason }}</div>
+              </div>
+            </div>
+            <div v-if="isOwner || isAdmin" class="owner-actions">
+              <router-link
+                v-if="['DRAFT', 'PENDING_REVIEW', 'REJECTED'].includes(collaboration.status)"
+                :to="`/collaborations/${collaboration.id}/edit`"
+                class="btn btn-secondary btn-sm"
+              >
+                ✏️ 编辑
+              </router-link>
+              <button
+                v-if="collaboration.status === 'REJECTED'"
+                class="btn btn-primary btn-sm"
+                @click="resubmit"
+              >
+                🔄 重新提交审核
+              </button>
+              <button
+                v-if="isAdmin && collaboration.status === 'PENDING_REVIEW'"
+                class="btn btn-primary btn-sm"
+                @click="adminApprove"
+              >
+                ✅ 审核通过
+              </button>
+              <button
+                v-if="isAdmin && collaboration.status === 'PENDING_REVIEW'"
+                class="btn btn-secondary btn-sm"
+                @click="adminReject"
+              >
+                ❌ 驳回
+              </button>
+              <router-link
+                v-if="collaboration.applicationCount > 0 && (isOwner || isAdmin)"
+                :to="`/admin/collaborations?collaborationId=${collaboration.id}`"
+                class="btn btn-ghost btn-sm"
+              >
+                👥 查看申请 ({{ collaboration.applicationCount }})
+              </router-link>
+            </div>
             <div class="header-meta">
               <div class="creator-info">
                 <img :src="collaboration.creator?.avatar" alt="">
@@ -195,6 +242,8 @@ const showToast = inject('showToast')
 
 const collaboration = ref(null)
 const userApplication = ref(null)
+const isOwner = ref(false)
+const isAdmin = ref(false)
 const loading = ref(false)
 const showApplyModal = ref(false)
 const submitting = ref(false)
@@ -257,12 +306,25 @@ const getStatusText = (status) => {
   return map[status] || status
 }
 
+const getCollabStatus = (s) => {
+  const map = {
+    DRAFT: '草稿',
+    PENDING_REVIEW: '待审核',
+    PUBLISHED: '已发布',
+    REJECTED: '未通过审核',
+    CLOSED: '已关闭'
+  }
+  return map[s] || s
+}
+
 const fetchDetail = async () => {
   loading.value = true
   try {
     const res = await api.get(`/collaborations/${route.params.id}`)
     collaboration.value = res.collaboration
     userApplication.value = res.userApplication
+    isOwner.value = res.isOwner || false
+    isAdmin.value = res.isAdmin || false
   } catch (e) {
     showToast(e.error || '加载失败', 'error')
   } finally {
@@ -295,6 +357,42 @@ const cancelApplication = async () => {
     showToast('申请已取消', 'success')
   } catch (e) {
     showToast(e.error || '取消失败', 'error')
+  }
+}
+
+const resubmit = async () => {
+  if (!confirm('确定要重新提交审核吗？')) return
+  try {
+    await api.post(`/collaborations/${collaboration.value.id}/resubmit`)
+    collaboration.value.status = 'PENDING_REVIEW'
+    collaboration.value.rejectionReason = null
+    showToast('已重新提交审核', 'success')
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
+const adminApprove = async () => {
+  if (!confirm('确定审核通过并发布该合作招募吗？')) return
+  try {
+    await api.post(`/collaborations/${collaboration.value.id}/publish`)
+    collaboration.value.status = 'PUBLISHED'
+    showToast('已通过并发布', 'success')
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
+const adminReject = async () => {
+  const reason = prompt('请输入驳回原因（将发送给发起者）')
+  if (reason === null) return
+  try {
+    await api.post(`/collaborations/${collaboration.value.id}/reject`, { reason })
+    collaboration.value.status = 'REJECTED'
+    collaboration.value.rejectionReason = reason
+    showToast('已驳回', 'success')
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
   }
 }
 
@@ -576,6 +674,42 @@ onMounted(() => {
   padding-top: 16px;
   border-top: 1px solid var(--border-light);
   margin-top: 8px;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-draft { background: #f5f5f5; color: #8c8c8c; }
+.status-pending_review { background: #fff7e6; color: #d48806; }
+.status-published { background: #f6ffed; color: #52c41a; }
+.status-rejected { background: #fff1f0; color: #cf1322; }
+.status-closed { background: #f0f0f0; color: #8c8c8c; }
+
+.rejection-notice {
+  display: flex;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--danger-light);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--danger);
+}
+.notice-icon { font-size: 22px; flex-shrink: 0; }
+.rejection-detail { margin-top: 4px; font-size: 13px; opacity: 0.9; }
+
+.owner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
 }
 
 @media (max-width: 900px) {

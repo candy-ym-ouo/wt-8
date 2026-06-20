@@ -17,6 +17,9 @@
         <span v-if="t.value === 'applications' && stats.pendingApplications > 0" class="tab-badge">
           {{ stats.pendingApplications }}
         </span>
+        <span v-if="t.value === 'review' && stats.pendingReviewCollaborations > 0" class="tab-badge">
+          {{ stats.pendingReviewCollaborations }}
+        </span>
       </button>
     </div>
 
@@ -30,6 +33,13 @@
           </div>
         </div>
         <div class="stat-card card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-info">
+            <div class="stat-value" style="color: #d48806;">{{ stats.pendingReviewCollaborations }}</div>
+            <div class="stat-label">待审核项目</div>
+          </div>
+        </div>
+        <div class="stat-card card">
           <div class="stat-icon">✅</div>
           <div class="stat-info">
             <div class="stat-value">{{ stats.publishedCollaborations }}</div>
@@ -37,24 +47,17 @@
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon">📝</div>
+          <div class="stat-icon">❌</div>
+          <div class="stat-info">
+            <div class="stat-value" style="color: #cf1322;">{{ stats.rejectedCollaborations }}</div>
+            <div class="stat-label">已驳回项目</div>
+          </div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-icon">�</div>
           <div class="stat-info">
             <div class="stat-value">{{ stats.totalApplications }}</div>
             <div class="stat-label">申请总数</div>
-          </div>
-        </div>
-        <div class="stat-card card">
-          <div class="stat-icon">⏳</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.pendingApplications }}</div>
-            <div class="stat-label">待审核申请</div>
-          </div>
-        </div>
-        <div class="stat-card card">
-          <div class="stat-icon">👍</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.approvedApplications }}</div>
-            <div class="stat-label">已通过申请</div>
           </div>
         </div>
         <div class="stat-card card">
@@ -140,7 +143,7 @@
               <td class="text-sm">{{ c.compensation || '-' }}</td>
               <td class="text-sm">{{ c.applicationCount }}</td>
               <td>
-                <span :class="['badge', c.status === 'PUBLISHED' ? 'badge-approved' : 'badge-pending']">
+                <span :class="['badge', getStatusBadgeClass(c.status)]">
                   {{ statusLabel(c.status) }}
                 </span>
               </td>
@@ -157,6 +160,8 @@
               </td>
               <td>
                 <button class="btn btn-ghost btn-sm" @click="openCollabForm(c)">编辑</button>
+                <button v-if="c.status === 'PENDING_REVIEW'" class="btn btn-primary btn-sm" @click="openReviewCollabModal(c, 'APPROVE')">✅ 通过</button>
+                <button v-if="c.status === 'PENDING_REVIEW'" class="btn btn-secondary btn-sm" @click="openReviewCollabModal(c, 'REJECT')">❌ 驳回</button>
                 <button v-if="c.status === 'DRAFT'" class="btn btn-ghost btn-sm" @click="publishCollab(c)">发布</button>
                 <button v-if="c.status === 'PUBLISHED'" class="btn btn-ghost btn-sm" @click="unpublishCollab(c)">下架</button>
                 <button class="btn btn-ghost btn-sm danger-btn" @click="deleteCollab(c)">🗑</button>
@@ -256,6 +261,110 @@
         <button class="page-btn" :disabled="appPage === 1" @click="loadApplications(appPage - 1)">←</button>
         <span class="page-info">第 {{ appPage }} / {{ appTotalPages }} 页</span>
         <button class="page-btn" :disabled="appPage === appTotalPages" @click="loadApplications(appPage + 1)">→</button>
+      </div>
+    </div>
+
+    <div v-if="currentTab === 'review'" class="section">
+      <div class="filter-tabs flex gap-sm mb">
+        <button
+          class="btn btn-sm"
+          :class="reviewStatusFilter === 'PENDING_REVIEW' ? 'btn-primary' : 'btn-secondary'"
+          @click="reviewStatusFilter = 'PENDING_REVIEW'; loadReviewCollaborations(1)"
+        >
+          待审核
+          <span v-if="stats.pendingReviewCollaborations > 0" class="tab-badge-sm">{{ stats.pendingReviewCollaborations }}</span>
+        </button>
+        <button
+          class="btn btn-sm"
+          :class="reviewStatusFilter === 'REJECTED' ? 'btn-primary' : 'btn-secondary'"
+          @click="reviewStatusFilter = 'REJECTED'; loadReviewCollaborations(1)"
+        >
+          已驳回
+        </button>
+      </div>
+
+      <div v-if="loadingReview" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else-if="reviewCollaborations.length === 0" class="empty-state card" style="padding: 64px 24px;">
+        <div class="empty-state-icon">✅</div>
+        <div class="empty-state-text">
+          {{ reviewStatusFilter === 'PENDING_REVIEW' ? '暂无可审核的合作招募' : '暂无驳回记录' }}
+        </div>
+        <div class="empty-hint text-sm text-muted" style="margin-top: 8px;">
+          {{ reviewStatusFilter === 'PENDING_REVIEW' ? '新的合作招募提交审核后将出现在这里' : '' }}
+        </div>
+      </div>
+      <div v-else class="review-list">
+        <div
+          v-for="c in reviewCollaborations"
+          :key="c.id"
+          class="review-card card"
+        >
+          <div class="review-header">
+            <div class="review-title-row">
+              <h3 class="review-title">
+                <router-link :to="`/collaborations/${c.id}`" class="link">{{ c.title }}</router-link>
+              </h3>
+              <span :class="['status-badge', `status-${c.status.toLowerCase().replace('_', '')}`]">
+                {{ statusLabel(c.status) }}
+              </span>
+            </div>
+            <div class="review-subtitle">
+              <span class="tag">{{ getCategoryLabel(c.category) }}</span>
+              <span>·</span>
+              <span class="text-muted text-sm">提交时间：{{ formatDateTime(c.createdAt) }}</span>
+            </div>
+          </div>
+
+          <div class="review-creator">
+            <img :src="c.creator?.avatar" class="creator-avatar" style="width:40px;height:40px;border-radius:50%;background:var(--bg-tertiary);">
+            <div class="creator-info">
+              <div class="font-medium">{{ c.creator?.username }}</div>
+              <div class="text-sm text-muted">ID: {{ c.creatorId }} · {{ c.creator?.email }}</div>
+            </div>
+          </div>
+
+          <div class="review-body">
+            <div class="review-description">
+              <strong>项目介绍：</strong>
+              <div class="desc-content">{{ c.description }}</div>
+            </div>
+            <div class="review-grid">
+              <div class="review-item">
+                <span class="review-label">💰 合作报酬</span>
+                <span class="review-value">{{ c.compensation || '面议' }}</span>
+              </div>
+              <div class="review-item" v-if="c.deadline">
+                <span class="review-label">⏰ 截止时间</span>
+                <span class="review-value">{{ formatDateTime(c.deadline) }}</span>
+              </div>
+              <div class="review-item">
+                <span class="review-label">👥 浏览量</span>
+                <span class="review-value">{{ c.viewCount }}</span>
+              </div>
+            </div>
+            <div v-if="c.tags && c.tags.length > 0" class="collab-tags" style="margin-top:12px;">
+              <span v-for="tag in c.tags" :key="tag" class="tag">#{{ tag }}</span>
+            </div>
+          </div>
+
+          <div v-if="c.rejectionReason" class="app-rejection">
+            <span class="rejection-label">上次驳回原因：</span>{{ c.rejectionReason }}
+            <div class="text-sm" style="margin-top:4px;opacity:0.8;">
+              审核人：{{ c.reviewer?.username || '-' }} · {{ formatDateTime(c.reviewedAt) }}
+            </div>
+          </div>
+
+          <div v-if="reviewStatusFilter === 'PENDING_REVIEW'" class="review-actions">
+            <button class="btn btn-primary" @click="openReviewCollabModal(c, 'APPROVE')">✅ 审核通过并发布</button>
+            <button class="btn btn-secondary" @click="openReviewCollabModal(c, 'REJECT')">❌ 驳回申请</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="reviewTotalPages > 1" class="pagination">
+        <button class="page-btn" :disabled="reviewPage === 1" @click="loadReviewCollaborations(reviewPage - 1)">←</button>
+        <span class="page-info">第 {{ reviewPage }} / {{ reviewTotalPages }} 页</span>
+        <button class="page-btn" :disabled="reviewPage === reviewTotalPages" @click="loadReviewCollaborations(reviewPage + 1)">→</button>
       </div>
     </div>
 
@@ -364,6 +473,46 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showReviewCollabModal" class="modal-overlay" @click.self="showReviewCollabModal = false">
+      <div class="modal card" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ reviewCollabAction === 'APPROVE' ? '审核通过合作招募' : '驳回合作招募' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showReviewCollabModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">合作项目</label>
+            <div class="form-static">{{ reviewingCollaboration?.title }}</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">发布者</label>
+            <div class="form-static">{{ reviewingCollaboration?.creator?.username }}</div>
+          </div>
+          <div v-if="reviewCollabAction === 'REJECT'" class="form-group">
+            <label class="form-label">驳回原因 <span style="color: var(--danger);">*</span></label>
+            <textarea
+              v-model="reviewCollabForm.reason"
+              class="form-textarea"
+              rows="3"
+              placeholder="请填写驳回原因，发布者将看到此说明以便修改..."
+            ></textarea>
+          </div>
+          <div v-else class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="reviewCollabForm.featured">
+              <span>同时设为精选推荐</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showReviewCollabModal = false">取消</button>
+          <button class="btn btn-primary" @click="submitCollabReview" :disabled="submittingCollabReview">
+            {{ submittingCollabReview ? '处理中...' : '确认' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -376,7 +525,8 @@ const showToast = inject('showToast')
 const tabs = [
   { value: 'overview', label: '数据概览', icon: '📊' },
   { value: 'collaborations', label: '合作项目', icon: '🤝' },
-  { value: 'applications', label: '申请审核', icon: '📝' }
+  { value: 'applications', label: '申请审核', icon: '📝' },
+  { value: 'review', label: '招募审核', icon: '✅' }
 ]
 
 const currentTab = ref('overview')
@@ -385,6 +535,8 @@ const stats = ref({
   publishedCollaborations: 0,
   draftCollaborations: 0,
   closedCollaborations: 0,
+  pendingReviewCollaborations: 0,
+  rejectedCollaborations: 0,
   totalApplications: 0,
   pendingApplications: 0,
   approvedApplications: 0,
@@ -396,8 +548,10 @@ const activeCollaborations = ref([])
 
 const statusFilters = [
   { label: '全部', value: 'all' },
+  { label: '待审核', value: 'PENDING_REVIEW' },
   { label: '已发布', value: 'PUBLISHED' },
   { label: '草稿', value: 'DRAFT' },
+  { label: '未通过', value: 'REJECTED' },
   { label: '已关闭', value: 'CLOSED' }
 ]
 
@@ -446,6 +600,19 @@ const reviewAction = ref('APPROVE')
 const submittingReview = ref(false)
 const reviewForm = ref({ reason: '', feedback: '' })
 
+const showReviewCollabModal = ref(false)
+const reviewingCollaboration = ref(null)
+const reviewCollabAction = ref('APPROVE')
+const submittingCollabReview = ref(false)
+const reviewCollabForm = ref({ reason: '', featured: false })
+
+const reviewCollaborations = ref([])
+const loadingReview = ref(false)
+const reviewStatusFilter = ref('PENDING_REVIEW')
+const reviewPage = ref(1)
+const reviewTotal = ref(0)
+const reviewTotalPages = ref(1)
+
 function getEmptyForm() {
   return {
     title: '',
@@ -469,7 +636,7 @@ const getCategoryLabel = (cat) => {
 }
 
 const statusLabel = (s) => {
-  const map = { DRAFT: '草稿', PUBLISHED: '已发布', CLOSED: '已关闭' }
+  const map = { DRAFT: '草稿', PENDING_REVIEW: '待审核', PUBLISHED: '已发布', REJECTED: '未通过', CLOSED: '已关闭' }
   return map[s] || s
 }
 
@@ -483,6 +650,17 @@ const getStatusText = (status) => {
   return map[status] || status
 }
 
+const getStatusBadgeClass = (s) => {
+  const map = {
+    DRAFT: 'badge-pending',
+    PENDING_REVIEW: 'badge-pending',
+    PUBLISHED: 'badge-approved',
+    REJECTED: 'badge-rejected',
+    CLOSED: 'badge-cancelled'
+  }
+  return map[s] || 'badge-pending'
+}
+
 const formatDateTime = (d) => {
   if (!d) return '-'
   const date = new Date(d)
@@ -494,6 +672,7 @@ const switchTab = (t) => {
   if (t === 'overview') loadStats()
   if (t === 'collaborations') loadCollaborations(1)
   if (t === 'applications') loadApplications(1)
+  if (t === 'review') loadReviewCollaborations(1)
 }
 
 const loadStats = async () => {
@@ -668,6 +847,59 @@ const submitReview = async () => {
     showToast(e.error || '操作失败', 'error')
   } finally {
     submittingReview.value = false
+  }
+}
+
+const loadReviewCollaborations = async (newPage = 1) => {
+  loadingReview.value = true
+  reviewPage.value = newPage
+  try {
+    const params = new URLSearchParams({ page: newPage, limit: 10, status: reviewStatusFilter.value })
+    const res = await api.get(`/collaborations?${params}`)
+    reviewCollaborations.value = res.collaborations
+    reviewTotal.value = res.total
+    reviewTotalPages.value = res.totalPages
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingReview.value = false
+  }
+}
+
+const openReviewCollabModal = (c, action) => {
+  reviewingCollaboration.value = c
+  reviewCollabAction.value = action
+  reviewCollabForm.value = { reason: '', featured: false }
+  showReviewCollabModal.value = true
+}
+
+const submitCollabReview = async () => {
+  if (reviewCollabAction.value === 'REJECT' && !reviewCollabForm.value.reason) {
+    showToast('请填写驳回原因', 'warning')
+    return
+  }
+  submittingCollabReview.value = true
+  try {
+    if (reviewCollabAction.value === 'APPROVE') {
+      if (reviewCollabForm.value.featured) {
+        await api.put(`/collaborations/${reviewingCollaboration.value.id}`, { isFeatured: true })
+      }
+      await api.post(`/collaborations/${reviewingCollaboration.value.id}/publish`)
+      showToast('已通过审核并发布', 'success')
+    } else {
+      await api.post(`/collaborations/${reviewingCollaboration.value.id}/reject`, {
+        reason: reviewCollabForm.value.reason
+      })
+      showToast('已驳回', 'success')
+    }
+    showReviewCollabModal.value = false
+    loadReviewCollaborations(reviewPage.value)
+    loadCollaborations(page.value)
+    loadStats()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submittingCollabReview.value = false
   }
 }
 
@@ -880,6 +1112,7 @@ onMounted(() => {
 .badge-approved { background: #f6ffed; color: #52c41a; }
 .badge-pending { background: #fff7e6; color: #d48806; }
 .badge-rejected { background: #fff1f0; color: #cf1322; }
+.badge-cancelled { background: #f5f5f5; color: #8c8c8c; }
 
 .tag {
   display: inline-block;
@@ -958,4 +1191,84 @@ onMounted(() => {
 .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .page-info { font-size: 13px; color: var(--text-secondary); }
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.review-card {
+  padding: 24px;
+}
+.review-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 16px;
+}
+.review-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.review-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.review-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.review-creator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+.creator-info { font-size: 14px; }
+
+.review-body { font-size: 14px; line-height: 1.7; }
+.review-description { margin-bottom: 16px; }
+.desc-content {
+  margin-top: 6px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+}
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.review-item {
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.review-label { font-size: 12px; color: var(--text-tertiary); }
+.review-value { font-size: 14px; font-weight: 500; }
+
+.review-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.filter-tabs { display: flex; flex-wrap: wrap; }
 </style>

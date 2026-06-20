@@ -16,6 +16,7 @@
           <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
           <router-link to="/topic-submissions" class="nav-link" active-class="active">专题投稿</router-link>
           <router-link to="/collaboration-applications" class="nav-link" active-class="active">合作申请</router-link>
+          <router-link to="/my-collaborations" class="nav-link" active-class="active">我的招募</router-link>
           <router-link to="/subscriptions" class="nav-link" active-class="active">订阅</router-link>
           <router-link to="/messages" class="nav-link messages-link" active-class="active">
             消息
