@@ -55,6 +55,12 @@ const routes = [
   { path: '/interviews', name: 'Interviews', component: () => import('@/views/Interviews.vue') },
   { path: '/interviews/:id', name: 'InterviewDetail', component: () => import('@/views/InterviewDetail.vue') },
   { path: '/admin/interviews', name: 'AdminInterviews', component: () => import('@/views/AdminInterviews.vue'), meta: { requiresAdmin: true } },
+  { path: '/print-orders', name: 'PrintOrders', component: () => import('@/views/PrintOrders.vue') },
+  { path: '/print-orders/mine', name: 'MyPrintOrders', component: () => import('@/views/PrintOrders.vue'), meta: { requiresAuth: true } },
+  { path: '/print-orders/new', name: 'NewPrintOrder', component: () => import('@/views/NewPrintOrder.vue'), meta: { requiresAuth: true } },
+  { path: '/print-orders/:id/edit', name: 'EditPrintOrder', component: () => import('@/views/NewPrintOrder.vue'), meta: { requiresAuth: true } },
+  { path: '/print-orders/:id', name: 'PrintOrderDetail', component: () => import('@/views/PrintOrderDetail.vue') },
+  { path: '/admin/print-orders', name: 'AdminPrintOrders', component: () => import('@/views/AdminPrintOrders.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 
