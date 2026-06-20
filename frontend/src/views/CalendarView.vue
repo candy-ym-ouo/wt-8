@@ -526,9 +526,18 @@ const selectDate = (day) => {
   }
 }
 
-const viewEvent = (evt) => {
+const viewEvent = async (evt) => {
   detailEvent.value = evt
   showEventDetail.value = true
+  if (authStore.isAuthenticated && evt._isSubscribed === undefined) {
+    try {
+      const res = await api.get('/calendar/subscribed')
+      const subIds = new Set((res.events || []).map(e => e.id))
+      events.value.forEach(e => {
+        e._isSubscribed = subIds.has(e.id)
+      })
+    } catch (e) {}
+  }
 }
 
 const loadEvents = async () => {
@@ -558,6 +567,7 @@ const loadMyEvents = async () => {
     })
     const res = await api.get(`/calendar/mine?${params}`)
     events.value = res.events || []
+    if (authStore.isAuthenticated) await markSubscriptions()
   } catch (e) {
     console.error(e)
   } finally {
@@ -574,6 +584,9 @@ const loadSubscribed = async () => {
     })
     const res = await api.get(`/calendar/subscribed?${params}`)
     events.value = res.events || []
+    events.value.forEach(e => {
+      e._isSubscribed = true
+    })
   } catch (e) {
     console.error(e)
   } finally {
@@ -599,7 +612,16 @@ const toggleSubscribe = async (evt) => {
       evt._isSubscribed = false
       showToast('已取消订阅', 'success')
     } else {
-      await api.post(`/calendar/${evt.id}/subscribe`)
+      try {
+        await api.post(`/calendar/${evt.id}/subscribe`)
+      } catch (e) {
+        if (e.error && e.error.includes('已订阅')) {
+          evt._isSubscribed = true
+          showToast('已订阅', 'success')
+          return
+        }
+        throw e
+      }
       evt._isSubscribed = true
       showToast('订阅成功', 'success')
     }

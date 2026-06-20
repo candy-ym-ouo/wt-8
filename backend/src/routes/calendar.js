@@ -247,7 +247,7 @@ async function routes(fastify, options) {
     });
 
     if (existing) {
-      return reply.code(400).send({ error: '已订阅此事件' });
+      return { message: '已订阅此事件', alreadySubscribed: true };
     }
 
     await prisma.calendarSubscription.create({
