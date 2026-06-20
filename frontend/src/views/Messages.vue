@@ -182,6 +182,7 @@ const showToast = inject('showToast')
 const typeTabs = [
   { label: '全部', value: 'all' },
   { label: '系统通知', value: 'SYSTEM' },
+  { label: '举报通知', value: 'REPORT' },
   { label: '合作消息', value: 'COLLABORATION' },
   { label: '活动消息', value: 'EVENT' },
   { label: '用户私信', value: 'USER' }
@@ -296,6 +297,7 @@ const stripHtml = (text) => text.replace(/<[^>]*>/g, '').replace(/\n/g, ' ')
 const getTypeLabel = (type) => {
   const map = {
     SYSTEM: '系统通知',
+    REPORT: '举报通知',
     COLLABORATION: '合作消息',
     EVENT: '活动消息',
     USER: '用户消息'

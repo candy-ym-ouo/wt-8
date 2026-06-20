@@ -24,6 +24,7 @@
             消息
             <span v-if="unreadCount > 0" class="badge-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </router-link>
+          <router-link to="/report-center" class="nav-link" active-class="active">举报中心</router-link>
         </template>
       </nav>
 
@@ -49,6 +50,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/crowdfundings" class="menu-item">
                 <span>🎯</span> 众筹管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/reports" class="menu-item">
+                <span>🛡️</span> 举报管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">

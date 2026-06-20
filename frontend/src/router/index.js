@@ -36,6 +36,8 @@ const routes = [
   { path: '/crowdfundings/:id', name: 'CrowdfundingDetail', component: () => import('@/views/CrowdfundingDetail.vue') },
   { path: '/crowdfunding-orders', name: 'CrowdfundingOrders', component: () => import('@/views/CrowdfundingOrders.vue'), meta: { requiresAuth: true } },
   { path: '/admin/crowdfundings', name: 'AdminCrowdfundings', component: () => import('@/views/AdminCrowdfundings.vue'), meta: { requiresAdmin: true } },
+  { path: '/report-center', name: 'ReportCenter', component: () => import('@/views/ReportCenter.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/reports', name: 'AdminReports', component: () => import('@/views/AdminReports.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

@@ -31,6 +31,8 @@ const crowdfundingRoutes = require('./routes/crowdfundings');
 const crowdfundingTierRoutes = require('./routes/crowdfunding-tiers');
 const crowdfundingOrderRoutes = require('./routes/crowdfunding-orders');
 const adminCrowdfundingRoutes = require('./routes/admin-crowdfundings');
+const reportRoutes = require('./routes/reports');
+const adminReportRoutes = require('./routes/admin-reports');
 
 fastify.register(cors, {
   origin: true,
@@ -89,6 +91,8 @@ fastify.register(crowdfundingRoutes, { prefix: '/api/crowdfundings' });
 fastify.register(crowdfundingTierRoutes, { prefix: '/api/crowdfunding' });
 fastify.register(crowdfundingOrderRoutes, { prefix: '/api/crowdfunding-orders' });
 fastify.register(adminCrowdfundingRoutes, { prefix: '/api/admin/crowdfundings' });
+fastify.register(reportRoutes, { prefix: '/api/reports' });
+fastify.register(adminReportRoutes, { prefix: '/api/admin/reports' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

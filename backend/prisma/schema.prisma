@@ -42,6 +42,12 @@ model User {
   createdCrowdfundings Crowdfunding[]
   reviewedCrowdfundings Crowdfunding[] @relation("CrowdfundingReviewer")
   crowdfundingOrders CrowdfundingOrder[]
+  reports Report[] @relation("UserReports")
+  reportedBy Report[] @relation("ReportReporter")
+  targetReports Report[] @relation("ReportTarget")
+  appeals Appeal[] @relation("AppealAppellant")
+  handledAppeals Appeal[] @relation("AppealHandler")
+  reportLogs ReportLog[]
 }
 
 model Collaboration {
@@ -624,4 +630,81 @@ model CrowdfundingOrder {
   @@index([crowdfundingId])
   @@index([userId])
   @@index([status])
+}
+
+model Report {
+  id              Int       @id @default(autoincrement())
+  type            String    @default("CONTENT")
+  reason          String
+  description     String?
+  targetType      String
+  targetId        Int
+  targetTitle     String?
+  evidence        String    @default("[]")
+  status          String    @default("PENDING")
+  priority        String    @default("NORMAL")
+  handlerLevel    String    @default("LEVEL_1")
+  handlerId       Int?
+  handler         User?     @relation("UserReports", fields: [handlerId], references: [id])
+  handledAt       DateTime?
+  handleResult    String?
+  handleNote      String?
+  penaltyType     String?
+  penaltyDetail   String?
+  reporterId      Int
+  reporter        User      @relation("ReportReporter", fields: [reporterId], references: [id])
+  targetUserId    Int?
+  targetUser      User?     @relation("ReportTarget", fields: [targetUserId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  appeals         Appeal[]
+  logs            ReportLog[]
+
+  @@index([status])
+  @@index([reporterId])
+  @@index([handlerId])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model Appeal {
+  id              Int      @id @default(autoincrement())
+  reportId        Int
+  report          Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reason          String
+  evidence        String   @default("[]")
+  status          String   @default("PENDING")
+  handlerId       Int?
+  handler         User?    @relation("AppealHandler", fields: [handlerId], references: [id])
+  handledAt       DateTime?
+  handleResult    String?
+  handleNote      String?
+  appellantId     Int
+  appellant       User     @relation("AppealAppellant", fields: [appellantId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  logs            ReportLog[]
+
+  @@index([reportId])
+  @@index([status])
+  @@index([appellantId])
+}
+
+model ReportLog {
+  id          Int      @id @default(autoincrement())
+  reportId    Int
+  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  appealId    Int?
+  appeal      Appeal?  @relation(fields: [appealId], references: [id], onDelete: Cascade)
+  action      String
+  detail      String?
+  operatorId  Int
+  operator    User     @relation(fields: [operatorId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([reportId])
+  @@index([appealId])
+  @@index([createdAt])
 }
