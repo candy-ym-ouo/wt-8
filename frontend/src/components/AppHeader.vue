@@ -13,6 +13,7 @@
         <router-link to="/topics" class="nav-link" active-class="active">专题征稿</router-link>
         <router-link to="/collaborations" class="nav-link" active-class="active">创作者合作</router-link>
         <router-link to="/crowdfundings" class="nav-link" active-class="active">众筹预售</router-link>
+        <router-link to="/swap" class="nav-link" active-class="active">交换市集</router-link>
         <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
         <template v-if="authStore.isAuthenticated">
           <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
@@ -20,6 +21,7 @@
           <router-link to="/collaboration-applications" class="nav-link" active-class="active">合作申请</router-link>
           <router-link to="/my-collaborations" class="nav-link" active-class="active">我的招募</router-link>
           <router-link to="/crowdfunding-orders" class="nav-link" active-class="active">我的众筹</router-link>
+          <router-link to="/my-swaps" class="nav-link" active-class="active">我的交换</router-link>
           <router-link to="/subscriptions" class="nav-link" active-class="active">订阅</router-link>
           <router-link to="/messages" class="nav-link messages-link" active-class="active">
             消息
@@ -54,6 +56,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/crowdfundings" class="menu-item">
                 <span>🎯</span> 众筹管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/swaps" class="menu-item">
+                <span>🔄</span> 交换管理
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/reports" class="menu-item">
                 <span>🛡️</span> 举报管理

@@ -57,6 +57,11 @@ model User {
   collaborationNotes CollaborationNote[]
   workflowRecords WorkflowRecord[]
   reviewPerformance ReviewPerformance?
+  createdSwapListings SwapListing[]
+  reviewedSwapListings SwapListing[] @relation("SwapListingReviewer")
+  initiatedSwapMatches SwapMatch[] @relation("SwapInitiator")
+  respondedSwapMatches SwapMatch[] @relation("SwapResponder")
+  sentSwapMessages SwapMessage[] @relation("SwapMessageSender")
 }
 
 model Collaboration {
@@ -127,6 +132,8 @@ model Zine {
   reviews       Review[]
   collections   CollectionZine[]
   proofreadingTasks ProofreadingTask[]
+  swapListingsAsHave SwapListing[] @relation("HaveZine")
+  swapListingsAsWant SwapListing[] @relation("WantZine")
 }
 
 model Submission {
@@ -884,4 +891,89 @@ model ReviewPerformance {
 
   @@index([periodType])
   @@index([reviewerId])
+}
+
+model SwapListing {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String
+  coverImage      String?
+  haveZineId      Int?
+  haveZine        Zine?     @relation("HaveZine", fields: [haveZineId], references: [id])
+  haveZineTitle   String?
+  haveZineAuthor   String?
+  haveZineCategory String?
+  haveZineCondition String  @default("GOOD")
+  wantZineId      Int?
+  wantZine        Zine?     @relation("WantZine", fields: [wantZineId], references: [id])
+  wantZineTitle   String?
+  wantZineAuthor String?
+  wantZineCategory String?
+  wantTags         String    @default("[]")
+  haveTags         String    @default("[]")
+  category        String    @default("ZINE")
+  exchangeType    String    @default("SWAP")
+  location        String?
+  shippingMethod  String?
+  status          String    @default("DRAFT")
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?     @relation("SwapListingReviewer", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
+  isFeatured      Boolean   @default(false)
+  sortOrder       Int       @default(0)
+  viewCount       Int       @default(0)
+  matchCount      Int       @default(0)
+  creatorId       Int
+  creator         User     @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  matchesAsA      SwapMatch[] @relation("MatchListingA")
+  matchesAsB      SwapMatch[] @relation("MatchListingB")
+
+  @@index([status])
+  @@index([creatorId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model SwapMatch {
+  id              Int       @id @default(autoincrement())
+  listingAId      Int
+  listingA        SwapListing @relation("MatchListingA", fields: [listingAId], references: [id], onDelete: Cascade)
+  listingBId      Int
+  listingB        SwapListing @relation("MatchListingB", fields: [listingBId], references: [id], onDelete: Cascade)
+  matchScore      Float     @default(0)
+  status          String    @default("PENDING")
+  initiatorId    Int
+  initiator       User      @relation("SwapInitiator", fields: [initiatorId], references: [id])
+  responderId    Int
+  responder       User      @relation("SwapResponder", fields: [responderId], references: [id])
+  initiatorConfirmed Boolean  @default(false)
+  responderConfirmed Boolean  @default(false)
+  createdAt       DateTime  @default(now())
+  confirmedAt    DateTime?
+  completedAt    DateTime?
+
+  messages        SwapMessage[]
+
+  @@unique([listingAId, listingBId])
+  @@index([status])
+}
+
+model SwapMessage {
+  id              Int       @id @default(autoincrement())
+  matchId         Int
+  match           SwapMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  senderId        Int
+  sender          User      @relation("SwapMessageSender", fields: [senderId], references: [id])
+  content         String
+  isRead          Boolean   @default(false)
+  type            String    @default("TEXT")
+  createdAt       DateTime  @default(now())
+
+  @@index([matchId])
+  @@index([senderId])
+  @@index([createdAt])
 }

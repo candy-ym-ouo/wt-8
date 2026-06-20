@@ -40,6 +40,13 @@ const routes = [
   { path: '/report-center', name: 'ReportCenter', component: () => import('@/views/ReportCenter.vue'), meta: { requiresAuth: true } },
   { path: '/admin/reports', name: 'AdminReports', component: () => import('@/views/AdminReports.vue'), meta: { requiresAdmin: true } },
   { path: '/calendar', name: 'CalendarView', component: () => import('@/views/CalendarView.vue') },
+  { path: '/swap', name: 'SwapMarket', component: () => import('@/views/SwapMarket.vue') },
+  { path: '/swap/new', name: 'NewSwap', component: () => import('@/views/NewSwap.vue'), meta: { requiresAuth: true } },
+  { path: '/swap/:id/edit', name: 'EditSwap', component: () => import('@/views/NewSwap.vue'), meta: { requiresAuth: true } },
+  { path: '/swap/:id', name: 'SwapDetail', component: () => import('@/views/SwapDetail.vue') },
+  { path: '/my-swaps', name: 'MySwaps', component: () => import('@/views/MySwaps.vue'), meta: { requiresAuth: true } },
+  { path: '/swap-matches/:id', name: 'SwapMatchDetail', component: () => import('@/views/SwapMatchDetail.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/swaps', name: 'AdminSwaps', component: () => import('@/views/AdminSwaps.vue'), meta: { requiresAdmin: true } },
   { path: '/admin/calendar', name: 'AdminCalendar', component: () => import('@/views/AdminCalendar.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
