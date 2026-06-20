@@ -48,6 +48,10 @@ const routes = [
   { path: '/swap-matches/:id', name: 'SwapMatchDetail', component: () => import('@/views/SwapMatchDetail.vue'), meta: { requiresAuth: true } },
   { path: '/admin/swaps', name: 'AdminSwaps', component: () => import('@/views/AdminSwaps.vue'), meta: { requiresAdmin: true } },
   { path: '/admin/calendar', name: 'AdminCalendar', component: () => import('@/views/AdminCalendar.vue'), meta: { requiresAdmin: true } },
+  { path: '/membership', name: 'MembershipCenter', component: () => import('@/views/MembershipCenter.vue'), meta: { requiresAuth: true } },
+  { path: '/exclusive-zines', name: 'ExclusiveZines', component: () => import('@/views/ExclusiveZines.vue') },
+  { path: '/early-access', name: 'EarlyAccess', component: () => import('@/views/EarlyAccess.vue') },
+  { path: '/admin/memberships', name: 'AdminMemberships', component: () => import('@/views/AdminMemberships.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

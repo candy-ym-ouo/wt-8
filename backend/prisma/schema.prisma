@@ -62,6 +62,10 @@ model User {
   initiatedSwapMatches SwapMatch[] @relation("SwapInitiator")
   respondedSwapMatches SwapMatch[] @relation("SwapResponder")
   sentSwapMessages SwapMessage[] @relation("SwapMessageSender")
+  memberships     UserMembership[]
+  benefitCheckLogs BenefitCheckLog[]
+  exclusiveZines  ExclusiveZine[]
+  earlyAccesses   EarlyAccess[]
 }
 
 model Collaboration {
@@ -134,6 +138,7 @@ model Zine {
   proofreadingTasks ProofreadingTask[]
   swapListingsAsHave SwapListing[] @relation("HaveZine")
   swapListingsAsWant SwapListing[] @relation("WantZine")
+  earlyAccesses EarlyAccess[]
 }
 
 model Submission {
@@ -976,4 +981,134 @@ model SwapMessage {
   @@index([matchId])
   @@index([senderId])
   @@index([createdAt])
+}
+
+model MembershipPlan {
+  id            Int              @id @default(autoincrement())
+  name          String
+  code          String           @unique
+  description   String
+  price         Float            @default(0)
+  originalPrice Float            @default(0)
+  durationDays  Int              @default(30)
+  level         Int              @default(1)
+  color         String           @default("#d4624a")
+  icon          String?
+  benefits      String           @default("[]")
+  sortOrder     Int              @default(0)
+  isActive      Boolean          @default(true)
+  isRecommended Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  userMemberships UserMembership[]
+  messages        MembershipMessage[]
+}
+
+model UserMembership {
+  id             Int             @id @default(autoincrement())
+  userId         Int
+  user           User            @relation(fields: [userId], references: [id])
+  planId         Int
+  plan           MembershipPlan  @relation(fields: [planId], references: [id])
+  status         String          @default("ACTIVE")
+  startDate      DateTime        @default(now())
+  endDate        DateTime
+  autoRenew      Boolean         @default(false)
+  orderNo        String?         @unique
+  amount         Float           @default(0)
+  paymentMethod  String          @default("BALANCE")
+  paidAt         DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([userId, planId, status])
+  @@index([userId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model ExclusiveZine {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String
+  coverImage    String?
+  content       String
+  category      String    @default("MEMBER")
+  tags          String    @default("[]")
+  minLevel      Int       @default(1)
+  requirePlan   Boolean   @default(false)
+  status        String    @default("PUBLISHED")
+  views         Int       @default(0)
+  sortOrder     Int       @default(0)
+  isFeatured    Boolean   @default(false)
+  creatorId     Int
+  creator       User      @relation(fields: [creatorId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model EarlyAccess {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String
+  coverImage    String?
+  content       String
+  zineId        Int?
+  zine          Zine?     @relation(fields: [zineId], references: [id])
+  publishDate   DateTime
+  minLevel      Int       @default(1)
+  requirePlan   Boolean   @default(false)
+  earlyHours    Int       @default(24)
+  status        String    @default("PENDING")
+  views         Int       @default(0)
+  sortOrder     Int       @default(0)
+  creatorId     Int
+  creator       User      @relation(fields: [creatorId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model BenefitCheckLog {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id])
+  benefitCode    String
+  resourceType   String
+  resourceId     Int
+  hasAccess      Boolean   @default(false)
+  denialReason   String?
+  checkAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@index([benefitCode])
+  @@index([checkAt])
+}
+
+model MembershipMessage {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  name           String
+  title          String
+  content        String
+  type           String    @default("SYSTEM")
+  trigger        String    @default("MANUAL")
+  targetLevel    Int?
+  targetPlanId   Int?
+  targetPlan     MembershipPlan? @relation(fields: [targetPlanId], references: [id])
+  isActive       Boolean   @default(true)
+  sentCount      Int       @default(0)
+  lastSentAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model MembershipConfig {
+  id             Int       @id @default(autoincrement())
+  key            String    @unique
+  value          String
+  description    String?
+  updatedAt      DateTime  @updatedAt
 }

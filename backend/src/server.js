@@ -39,6 +39,8 @@ const editorWorkbenchRoutes = require('./routes/editor-workbench');
 const swapListingRoutes = require('./routes/swap-listings');
 const swapMatchRoutes = require('./routes/swap-matches');
 const adminSwapRoutes = require('./routes/admin-swaps');
+const membershipRoutes = require('./routes/memberships');
+const adminMembershipRoutes = require('./routes/admin-memberships');
 
 fastify.register(cors, {
   origin: true,
@@ -105,6 +107,8 @@ fastify.register(editorWorkbenchRoutes, { prefix: '/api/editor-workbench' });
 fastify.register(swapListingRoutes, { prefix: '/api/swap-listings' });
 fastify.register(swapMatchRoutes, { prefix: '/api/swap-matches' });
 fastify.register(adminSwapRoutes, { prefix: '/api/admin/swaps' });
+fastify.register(membershipRoutes, { prefix: '/api/memberships' });
+fastify.register(adminMembershipRoutes, { prefix: '/api/admin/memberships' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

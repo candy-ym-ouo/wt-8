@@ -15,6 +15,8 @@
         <router-link to="/crowdfundings" class="nav-link" active-class="active">众筹预售</router-link>
         <router-link to="/swap" class="nav-link" active-class="active">交换市集</router-link>
         <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
+        <router-link to="/exclusive-zines" class="nav-link" active-class="active">专属刊物</router-link>
+        <router-link to="/early-access" class="nav-link" active-class="active">提前阅读</router-link>
         <template v-if="authStore.isAuthenticated">
           <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
           <router-link to="/topic-submissions" class="nav-link" active-class="active">专题投稿</router-link>
@@ -42,6 +44,12 @@
               <router-link to="/profile" class="menu-item">
                 <span>👤</span> 个人资料
               </router-link>
+              <router-link to="/membership" class="menu-item">
+                <span>👑</span> 会员中心
+              </router-link>
+              <router-link to="/growth" class="menu-item">
+                <span>📈</span> 成长中心
+              </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
                 <span>⚙️</span> 后台管理
               </router-link>
@@ -65,6 +73,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/calendar" class="menu-item">
                 <span>📅</span> 日历管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/memberships" class="menu-item">
+                <span>👑</span> 会员管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">
