@@ -927,13 +927,13 @@ const quickApprove = async (item) => {
   try {
     submitting.value = true
     if (item.sourceType === 'SUBMISSION') {
-      await api.patch(`/admin/submissions/${item.id}/approve`, { category: '文学', tags: '原创', description: item.content?.substring(0, 100) })
+      await api.post(`/admin/submissions/${item.id}/approve`, { category: '文学', tags: '原创', description: item.content?.substring(0, 100) })
     } else if (item.sourceType === 'TOPIC') {
-      await api.patch(`/admin/topic-submissions/${item.id}/approve`)
+      await api.post(`/topic-submissions/${item.id}/review`, { action: 'APPROVE' })
     } else if (item.sourceType === 'COLLABORATION') {
-      await api.patch(`/admin/collaborations/${item.id}/approve`)
+      await api.post(`/collaborations/${item.id}/publish`)
     } else if (item.sourceType === 'CROWDFUNDING') {
-      await api.patch(`/admin/crowdfundings/${item.id}/approve`)
+      await api.post(`/crowdfundings/${item.id}/publish`)
     }
     await api.post('/editor-workbench/workflow', {
       targetType: item.sourceType,
@@ -963,13 +963,13 @@ const submitQuickReject = async () => {
     submitting.value = true
     const item = rejectTarget.value
     if (item.sourceType === 'SUBMISSION') {
-      await api.patch(`/admin/submissions/${item.id}/reject`, { reason: rejectForm.value.reason })
+      await api.post(`/admin/submissions/${item.id}/reject`, { reason: rejectForm.value.reason })
     } else if (item.sourceType === 'TOPIC') {
-      await api.patch(`/admin/topic-submissions/${item.id}/reject`, { reason: rejectForm.value.reason })
+      await api.post(`/topic-submissions/${item.id}/review`, { action: 'REJECT', reason: rejectForm.value.reason })
     } else if (item.sourceType === 'COLLABORATION') {
-      await api.patch(`/admin/collaborations/${item.id}/reject`, { reason: rejectForm.value.reason })
+      await api.post(`/collaborations/${item.id}/reject`, { reason: rejectForm.value.reason })
     } else if (item.sourceType === 'CROWDFUNDING') {
-      await api.patch(`/admin/crowdfundings/${item.id}/reject`, { reason: rejectForm.value.reason })
+      await api.post(`/crowdfundings/${item.id}/reject`, { reason: rejectForm.value.reason })
     }
     await api.post('/editor-workbench/workflow', {
       targetType: item.sourceType,
