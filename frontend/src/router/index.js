@@ -22,6 +22,7 @@ const routes = [
   { path: '/achievements', name: 'Achievements', component: () => import('@/views/Achievements.vue'), meta: { requiresAuth: true } },
   { path: '/tasks', name: 'Tasks', component: () => import('@/views/Tasks.vue'), meta: { requiresAuth: true } },
   { path: '/admin', name: 'Admin', component: () => import('@/views/Admin.vue'), meta: { requiresAdmin: true } },
+  { path: '/editor-workbench', name: 'EditorWorkbench', component: () => import('@/views/EditorWorkbench.vue'), meta: { requiresAdmin: true } },
   { path: '/admin/collections', name: 'AdminCollections', component: () => import('@/views/AdminCollections.vue'), meta: { requiresAdmin: true } },
   { path: '/collaborations', name: 'Collaborations', component: () => import('@/views/Collaborations.vue') },
   { path: '/collaborations/new', name: 'NewCollaboration', component: () => import('@/views/NewCollaboration.vue'), meta: { requiresAuth: true } },

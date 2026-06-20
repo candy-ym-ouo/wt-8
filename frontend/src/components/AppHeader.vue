@@ -43,6 +43,9 @@
               <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
                 <span>⚙️</span> 后台管理
               </router-link>
+              <router-link v-if="authStore.isAdmin" to="/editor-workbench" class="menu-item">
+                <span>🎯</span> 编辑工作台
+              </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/collections" class="menu-item">
                 <span>📚</span> 合集管理
               </router-link>

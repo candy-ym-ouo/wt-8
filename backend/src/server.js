@@ -35,6 +35,7 @@ const reportRoutes = require('./routes/reports');
 const adminReportRoutes = require('./routes/admin-reports');
 const calendarRoutes = require('./routes/calendar');
 const adminCalendarRoutes = require('./routes/admin-calendar');
+const editorWorkbenchRoutes = require('./routes/editor-workbench');
 
 fastify.register(cors, {
   origin: true,
@@ -97,6 +98,7 @@ fastify.register(reportRoutes, { prefix: '/api/reports' });
 fastify.register(adminReportRoutes, { prefix: '/api/admin/reports' });
 fastify.register(calendarRoutes, { prefix: '/api/calendar' });
 fastify.register(adminCalendarRoutes, { prefix: '/api/admin/calendar' });
+fastify.register(editorWorkbenchRoutes, { prefix: '/api/editor-workbench' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

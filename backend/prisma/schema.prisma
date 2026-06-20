@@ -51,6 +51,12 @@ model User {
   calendarEvents CreationCalendar[]
   calendarReminders CalendarReminder[]
   calendarSubscriptions CalendarSubscription[]
+  proofreadingAssigned ProofreadingTask[] @relation("ProofreadingAssignee")
+  proofreadingCreated ProofreadingTask[] @relation("ProofreadingCreator")
+  editorTemplates EditorTemplate[]
+  collaborationNotes CollaborationNote[]
+  workflowRecords WorkflowRecord[]
+  reviewPerformance ReviewPerformance?
 }
 
 model Collaboration {
@@ -120,6 +126,7 @@ model Zine {
   subscriptions Subscription[]
   reviews       Review[]
   collections   CollectionZine[]
+  proofreadingTasks ProofreadingTask[]
 }
 
 model Submission {
@@ -137,6 +144,7 @@ model Submission {
   updatedAt   DateTime @updatedAt
 
   review Review?
+  proofreadingTasks ProofreadingTask[]
 }
 
 model Subscription {
@@ -767,4 +775,113 @@ model CalendarSubscription {
 
   @@unique([calendarEventId, userId])
   @@index([userId])
+}
+
+model ProofreadingTask {
+  id           Int       @id @default(autoincrement())
+  zineId       Int?
+  zine         Zine?     @relation(fields: [zineId], references: [id])
+  submissionId Int?
+  submission   Submission? @relation(fields: [submissionId], references: [id])
+  title        String
+  content      String
+  type         String    @default("ZINE")
+  status       String    @default("PENDING")
+  priority     String    @default("NORMAL")
+  deadline     DateTime?
+  assigneeId   Int?
+  assignee     User?     @relation("ProofreadingAssignee", fields: [assigneeId], references: [id])
+  creatorId    Int
+  creator      User      @relation("ProofreadingCreator", fields: [creatorId], references: [id])
+  feedback     String?
+  corrections  String    @default("[]")
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([priority])
+}
+
+model EditorTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String   @default("SUBMISSION")
+  category    String   @default("GENERAL")
+  content     String
+  description String?
+  isPublic    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  usageCount  Int      @default(0)
+  creatorId   Int
+  creator     User     @relation(fields: [creatorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([type])
+  @@index([category])
+}
+
+model CollaborationNote {
+  id           Int       @id @default(autoincrement())
+  targetType   String
+  targetId     Int
+  targetTitle  String?
+  content      String
+  color        String    @default("#ffeaa7")
+  isPinned     Boolean   @default(false)
+  creatorId    Int
+  creator      User      @relation(fields: [creatorId], references: [id])
+  mentions     String    @default("[]")
+  attachments  String    @default("[]")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([targetType, targetId])
+  @@index([creatorId])
+  @@index([isPinned])
+}
+
+model WorkflowRecord {
+  id           Int      @id @default(autoincrement())
+  targetType   String
+  targetId     Int
+  targetTitle  String?
+  action       String
+  fromStatus   String?
+  toStatus     String?
+  remark       String?
+  metadata     String   @default("{}")
+  operatorId   Int
+  operator     User     @relation(fields: [operatorId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([operatorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ReviewPerformance {
+  id            Int      @id @default(autoincrement())
+  reviewerId    Int      @unique
+  reviewer      User     @relation(fields: [reviewerId], references: [id])
+  periodType    String   @default("MONTHLY")
+  periodStart   DateTime
+  periodEnd     DateTime
+  totalReviews  Int      @default(0)
+  approvedCount Int      @default(0)
+  rejectedCount Int      @default(0)
+  avgReviewTime Float    @default(0)
+  avgScore      Float    @default(0)
+  submissions   Int      @default(0)
+  topicSubs     Int      @default(0)
+  collaborations Int     @default(0)
+  crowdfundings Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([periodType])
+  @@index([reviewerId])
 }
