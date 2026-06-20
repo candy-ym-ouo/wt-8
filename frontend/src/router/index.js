@@ -7,6 +7,8 @@ const routes = [
   { path: '/register', name: 'Register', component: () => import('@/views/Register.vue') },
   { path: '/zines', name: 'Zines', component: () => import('@/views/Zines.vue') },
   { path: '/zines/:id', name: 'ZineDetail', component: () => import('@/views/ZineDetail.vue') },
+  { path: '/collections', name: 'Collections', component: () => import('@/views/Collections.vue') },
+  { path: '/collections/:id', name: 'CollectionDetail', component: () => import('@/views/CollectionDetail.vue') },
   { path: '/topics', name: 'Topics', component: () => import('@/views/Topics.vue') },
   { path: '/topics/:id', name: 'TopicDetail', component: () => import('@/views/TopicDetail.vue') },
   { path: '/topic-submissions', name: 'TopicSubmissions', component: () => import('@/views/TopicSubmissions.vue'), meta: { requiresAuth: true } },
@@ -20,6 +22,7 @@ const routes = [
   { path: '/achievements', name: 'Achievements', component: () => import('@/views/Achievements.vue'), meta: { requiresAuth: true } },
   { path: '/tasks', name: 'Tasks', component: () => import('@/views/Tasks.vue'), meta: { requiresAuth: true } },
   { path: '/admin', name: 'Admin', component: () => import('@/views/Admin.vue'), meta: { requiresAdmin: true } },
+  { path: '/admin/collections', name: 'AdminCollections', component: () => import('@/views/AdminCollections.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

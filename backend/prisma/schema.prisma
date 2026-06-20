@@ -34,6 +34,7 @@ model User {
   reviewedEventRegistrations EventRegistration[] @relation("EventRegistrationReviewer")
   eventCheckIns EventCheckIn[]
   operatedEventCheckIns EventCheckIn[] @relation("EventCheckInOperator")
+  createdCollections Collection[]
 }
 
 model Zine {
@@ -54,6 +55,7 @@ model Zine {
 
   subscriptions Subscription[]
   reviews       Review[]
+  collections   CollectionZine[]
 }
 
 model Submission {
@@ -434,4 +436,54 @@ model EventCheckIn {
   createdAt       DateTime @default(now())
 
   @@unique([eventId, registrationId])
+}
+
+model Collection {
+  id          Int              @id @default(autoincrement())
+  title       String
+  description String
+  coverImage  String?
+  content     String
+  category    String
+  tags        String           @default("[]")
+  status      String           @default("DRAFT")
+  sortOrder   Int              @default(0)
+  viewCount   Int              @default(0)
+  likeCount   Int              @default(0)
+  isFeatured  Boolean          @default(false)
+  creatorId   Int
+  creator     User             @relation(fields: [creatorId], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  zines       CollectionZine[]
+  featured    FeaturedCollection?
+}
+
+model CollectionZine {
+  id           Int       @id @default(autoincrement())
+  collectionId Int
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  zineId       Int
+  zine         Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  sortOrder    Int       @default(0)
+  recommendNote String?
+  addedAt      DateTime  @default(now())
+
+  @@unique([collectionId, zineId])
+}
+
+model FeaturedCollection {
+  id             Int      @id @default(autoincrement())
+  collectionId   Int      @unique
+  collection     Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  bannerImage    String?
+  bannerTitle    String?
+  bannerSubtitle String?
+  sortOrder      Int      @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }

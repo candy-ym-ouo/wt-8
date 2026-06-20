@@ -369,6 +369,153 @@ async function main() {
   }
   console.log(`✅ ${users.length + 1} 个用户成长记录已初始化`);
 
+  const collectionData = [
+    {
+      title: '夏日独立文学特辑',
+      description: '精选十本夏日主题的独立文学刊物，带你在文字中感受夏日的热烈与温柔。',
+      content: '夏天，是一个充满故事的季节。\n\n炎热的午后，蝉鸣声中，一本好书，一杯冰饮，就是最美好的时光。\n\n本辑精选了十本以夏日为主题的独立刊物，涵盖散文、诗歌、小说等多种体裁，希望能给你带来不一样的夏日阅读体验。',
+      category: '主题特辑',
+      tags: JSON.stringify(['夏日', '文学', '精选']),
+      status: 'PUBLISHED',
+      sortOrder: 1,
+      isFeatured: true,
+      viewCount: 890,
+      likeCount: 125,
+      coverImage: 'https://picsum.photos/seed/collection001/800/500',
+      zineIndices: [0, 1, 5, 8]
+    },
+    {
+      title: '胶片摄影入门指南',
+      description: '从零开始学习胶片摄影，收录最值得阅读的胶片主题刊物。',
+      content: '胶片摄影，是一种态度。\n\n在这个数码时代，为什么还有人坚持使用胶片？\n\n也许是因为胶片的色彩，也许是因为等待的仪式感，也许是因为不完美才更真实。\n\n本合集收录了多本胶片摄影相关的独立刊物，从入门到进阶，带你走进胶片的世界。',
+      category: '创作灵感',
+      tags: JSON.stringify(['胶片', '摄影', '入门']),
+      status: 'PUBLISHED',
+      sortOrder: 2,
+      isFeatured: true,
+      viewCount: 650,
+      likeCount: 98,
+      coverImage: 'https://picsum.photos/seed/collection002/800/500',
+      zineIndices: [1, 3]
+    },
+    {
+      title: '城市观察 · 都市生活实录',
+      description: '聚焦城市生活的独立刊物合集，记录当代都市人的真实生活。',
+      content: '城市，是几百万人生存的容器。\n\n每个人都在这座城市里扮演着自己的角色，编织着属于自己的故事。\n\n本合集收录了多本关注城市生活的独立刊物，带你从不同角度观察这座城市。',
+      category: '生活方式',
+      tags: JSON.stringify(['城市', '生活', '人文']),
+      status: 'PUBLISHED',
+      sortOrder: 3,
+      isFeatured: false,
+      viewCount: 420,
+      likeCount: 67,
+      coverImage: 'https://picsum.photos/seed/collection003/800/500',
+      zineIndices: [3, 6, 9]
+    },
+    {
+      title: '地下音乐场景',
+      description: '探索独立音乐世界，收录最具代表性的地下音乐刊物。',
+      content: '地下音乐，是主流之外的另一片天空。\n\n这里有最真实的表达，最纯粹的热爱，最热血的现场。\n\n本合集带你走进地下音乐的世界，感受独立音乐的魅力。',
+      category: '独立文化',
+      tags: JSON.stringify(['独立音乐', '地下', '现场']),
+      status: 'PUBLISHED',
+      sortOrder: 4,
+      isFeatured: false,
+      viewCount: 780,
+      likeCount: 156,
+      coverImage: 'https://picsum.photos/seed/collection004/800/500',
+      zineIndices: [2, 5]
+    },
+    {
+      title: '插画师的灵感手册',
+      description: '多位插画师的作品集与创作心得分享，激发你的创作灵感。',
+      content: '每一幅插画的背后，都有一个故事。\n\n本合集收录了多位独立插画师的作品和创作心得，希望能给热爱创作的你带来灵感。',
+      category: '艺术设计',
+      tags: JSON.stringify(['插画', '创作', '灵感']),
+      status: 'PUBLISHED',
+      sortOrder: 5,
+      isFeatured: false,
+      viewCount: 540,
+      likeCount: 89,
+      coverImage: 'https://picsum.photos/seed/collection005/800/500',
+      zineIndices: [4, 7]
+    },
+    {
+      title: '诗歌爱好者私藏',
+      description: '当代青年诗歌合集，收录最值得一读的独立诗歌刊物。',
+      content: '诗歌，是语言的钻石。\n\n在这个快节奏的时代，还有人在坚持写诗，还有人在认真读诗。\n\n本合集收录了多本独立诗歌刊物，愿你在文字中找到共鸣。',
+      category: '文学诗歌',
+      tags: JSON.stringify(['诗歌', '青年', '文学']),
+      status: 'PUBLISHED',
+      sortOrder: 6,
+      isFeatured: false,
+      viewCount: 310,
+      likeCount: 52,
+      coverImage: 'https://picsum.photos/seed/collection006/800/500',
+      zineIndices: [0, 8]
+    }
+  ];
+
+  const collections = [];
+  for (const cData of collectionData) {
+    const { zineIndices, ...collectionInfo } = cData;
+    const collection = await prisma.collection.create({
+      data: {
+        ...collectionInfo,
+        creatorId: admin.id
+      }
+    });
+    collections.push(collection);
+
+    for (let i = 0; i < zineIndices.length; i++) {
+      const zineIndex = zineIndices[i];
+      if (zines[zineIndex]) {
+        await prisma.collectionZine.create({
+          data: {
+            collectionId: collection.id,
+            zineId: zines[zineIndex].id,
+            sortOrder: i,
+            recommendNote: i === 0 ? '本期首推，不容错过的精彩作品' : null
+          }
+        });
+      }
+    }
+  }
+  console.log(`✅ ${collections.length} 个合集已创建`);
+
+  const featuredCollectionData = [
+    {
+      collectionIndex: 0,
+      bannerTitle: '夏日阅读特辑',
+      bannerSubtitle: '十本夏日主题独立刊物，陪你度过漫长假期',
+      bannerImage: 'https://picsum.photos/seed/featured001/1200/400',
+      sortOrder: 1,
+      isActive: true
+    },
+    {
+      collectionIndex: 1,
+      bannerTitle: '胶片摄影入门',
+      bannerSubtitle: '从零开始，走进胶片的光影世界',
+      bannerImage: 'https://picsum.photos/seed/featured002/1200/400',
+      sortOrder: 2,
+      isActive: true
+    }
+  ];
+
+  for (const fData of featuredCollectionData) {
+    const { collectionIndex, ...featuredInfo } = fData;
+    const collection = collections[collectionIndex];
+    if (collection) {
+      await prisma.featuredCollection.create({
+        data: {
+          collectionId: collection.id,
+          ...featuredInfo
+        }
+      });
+    }
+  }
+  console.log(`✅ ${featuredCollectionData.length} 个精选推荐已创建`);
+
   console.log('\n🎉 示例数据填充完成！');
   console.log('\n📋 测试账号：');
   console.log('  管理员: admin / 123456');

@@ -9,6 +9,7 @@
       <nav class="nav">
         <router-link to="/" class="nav-link" exact-active-class="active">首页</router-link>
         <router-link to="/zines" class="nav-link" active-class="active">刊物</router-link>
+        <router-link to="/collections" class="nav-link" active-class="active">合集</router-link>
         <router-link to="/topics" class="nav-link" active-class="active">专题征稿</router-link>
         <template v-if="authStore.isAuthenticated">
           <router-link to="/submissions" class="nav-link" active-class="active">我的投稿</router-link>
@@ -34,6 +35,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
                 <span>⚙️</span> 后台管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/collections" class="menu-item">
+                <span>📚</span> 合集管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">
