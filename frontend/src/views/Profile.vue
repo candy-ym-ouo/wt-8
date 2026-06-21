@@ -25,6 +25,34 @@
             <div class="stat-label">注册时间</div>
             <div class="stat-value text-sm">{{ formatDate(authStore.user?.createdAt) }}</div>
           </div>
+          <div class="stat-item" v-if="subStats">
+            <div class="stat-label">刊物订阅</div>
+            <div class="stat-value text-sm">
+              <span class="stat-accent">{{ subStats.totalSubs || 0 }}</span>
+              <span class="stat-detail" v-if="subStats.totalSubs > 0">
+                (免费 {{ subStats.freeSubs }} / 标准 {{ subStats.standardSubs }} / 高级 {{ subStats.premiumSubs }})
+              </span>
+            </div>
+          </div>
+          <div class="stat-item" v-if="subStats">
+            <div class="stat-label">关注作者</div>
+            <div class="stat-value text-sm stat-accent">{{ subStats.followedAuthors || 0 }}</div>
+          </div>
+        </div>
+
+        <div class="profile-quick-links" v-if="subStats">
+          <router-link to="/subscriptions" class="quick-link card">
+            <span class="quick-icon">📖</span>
+            <span class="quick-label">我的订阅</span>
+          </router-link>
+          <router-link to="/subscriptions" class="quick-link card" @click="goToTab('updates')">
+            <span class="quick-icon">🔔</span>
+            <span class="quick-label">系列更新</span>
+          </router-link>
+          <router-link to="/subscriptions" class="quick-link card" @click="goToTab('feed')">
+            <span class="quick-icon">📡</span>
+            <span class="quick-label">作者动态</span>
+          </router-link>
         </div>
       </div>
 
@@ -74,12 +102,16 @@
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+import api from '@/utils/api'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const showToast = inject('showToast')
 
 const form = ref({ avatar: '', bio: '' })
 const saving = ref(false)
+const subStats = ref(null)
 
 const formatDate = (date) => {
   if (!date) return '-'
@@ -108,7 +140,15 @@ onMounted(async () => {
   } catch (e) {}
   form.value.avatar = authStore.user?.avatar || ''
   form.value.bio = authStore.user?.bio || ''
+  try {
+    const res = await api.get('/subscriptions/stats')
+    subStats.value = res
+  } catch (e) {}
 })
+
+const goToTab = (tab) => {
+  router.push({ path: '/subscriptions', query: { tab } })
+}
 </script>
 
 <style scoped>
@@ -170,6 +210,28 @@ onMounted(async () => {
 }
 .stat-label { font-size: 13px; color: var(--text-secondary); }
 .stat-value { font-weight: 500; }
+.stat-accent { color: var(--accent); font-weight: 600; }
+.stat-detail { font-size: 11px; color: var(--text-tertiary); margin-left: 4px; }
+.profile-quick-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+.quick-link:hover { transform: translateY(-2px); }
+.quick-icon { font-size: 22px; }
+.quick-label { font-size: 12px; font-weight: 500; }
 .edit-card { padding: 28px; }
 .card-title {
   font-size: 16px;

@@ -283,6 +283,134 @@
       </div>
     </div>
 
+    <div v-if="currentTab === 'substats'" class="section">
+      <div v-if="loadingSubStats" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else>
+        <div class="stats-grid">
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: #fef3c7; color: #f59e0b;">📖</div>
+            <div class="stat-info">
+              <div class="stat-num">{{ subStats.totalSubscriptions || 0 }}</div>
+              <div class="stat-label">总订阅数</div>
+            </div>
+          </div>
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">⭐</div>
+            <div class="stat-info">
+              <div class="stat-num">{{ subStats.freeSubscriptions || 0 }}</div>
+              <div class="stat-label">免费订阅</div>
+            </div>
+          </div>
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">🌟</div>
+            <div class="stat-info">
+              <div class="stat-num">{{ subStats.standardSubscriptions || 0 }}</div>
+              <div class="stat-label">标准订阅</div>
+            </div>
+          </div>
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: #f3e8ff; color: #9333ea;">👑</div>
+            <div class="stat-info">
+              <div class="stat-num">{{ subStats.premiumSubscriptions || 0 }}</div>
+              <div class="stat-label">高级订阅</div>
+            </div>
+          </div>
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: #cffafe; color: #0891b2;">🔔</div>
+            <div class="stat-info">
+              <div class="stat-num">{{ subStats.seriesNotifyEnabled || 0 }}</div>
+              <div class="stat-label">系列提醒开启</div>
+            </div>
+          </div>
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: #fee2e2; color: #dc2626;">📡</div>
+            <div class="stat-info">
+              <div class="stat-num">{{ subStats.totalAuthorFollows || 0 }}</div>
+              <div class="stat-label">作者关注数</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-lg" style="padding: 24px;">
+          <h3 class="font-semibold mb">热门订阅刊物</h3>
+          <div v-if="!topZineStats || topZineStats.length === 0" class="text-sm text-muted text-center py-8">暂无数据</div>
+          <div v-else class="plan-stats">
+            <div v-for="z in topZineStats" :key="z.id" class="plan-stat-item">
+              <div class="plan-stat-name">{{ z.title }}</div>
+              <div class="plan-stat-bar">
+                <div class="plan-stat-fill" style="background: var(--accent);"
+                  :style="{ width: (z.subscriberCount / maxZineSubCount * 100) + '%' }"
+                ></div>
+              </div>
+              <div class="plan-stat-count">{{ z.subscriberCount }} 人</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-lg" style="padding: 24px;">
+          <h3 class="font-semibold mb">热门关注作者</h3>
+          <div v-if="!topAuthorStats || topAuthorStats.length === 0" class="text-sm text-muted text-center py-8">暂无数据</div>
+          <div v-else class="plan-stats">
+            <div v-for="a in topAuthorStats" :key="a.id" class="plan-stat-item">
+              <div class="plan-stat-name">{{ a.username }}</div>
+              <div class="plan-stat-bar">
+                <div class="plan-stat-fill" style="background: #2563eb;"
+                  :style="{ width: (a.followerCount / maxAuthorFollowerCount * 100) + '%' }"
+                ></div>
+              </div>
+              <div class="plan-stat-count">{{ a.followerCount }} 人</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="currentTab === 'activities'" class="section">
+      <div class="flex justify-between items-center mb">
+        <h3 class="font-semibold">作者动态管理</h3>
+        <button class="btn btn-primary btn-sm" @click="openActivityForm()">+ 发布动态</button>
+      </div>
+      <div v-if="loadingActivities" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else class="admin-list card">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>作者</th>
+              <th>类型</th>
+              <th>标题</th>
+              <th>内容</th>
+              <th>公开</th>
+              <th>时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="a in activities" :key="a.id">
+              <td>
+                <div class="flex items-center gap-sm">
+                  <img v-if="a.author?.avatar" :src="a.author.avatar" style="width: 28px; height: 28px; border-radius: 50%;">
+                  <span class="text-sm">{{ a.author?.username }}</span>
+                </div>
+              </td>
+              <td><span class="tag">{{ a.type }}</span></td>
+              <td class="font-medium">{{ a.title }}</td>
+              <td class="text-sm text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ a.content || '-' }}</td>
+              <td>
+                <span :class="['badge', a.isPublic ? 'badge-approved' : 'badge-rejected']">
+                  {{ a.isPublic ? '公开' : '隐藏' }}
+                </span>
+              </td>
+              <td class="text-sm text-muted">{{ formatDate(a.createdAt) }}</td>
+              <td>
+                <button class="btn btn-ghost btn-sm" @click="openActivityForm(a)">编辑</button>
+                <button class="btn btn-ghost btn-sm danger-btn" @click="deleteActivity(a)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div v-if="currentTab === 'messages'" class="section">
       <div class="flex justify-between items-center mb">
         <h3 class="font-semibold">会员消息触达</h3>
@@ -550,6 +678,74 @@
     </div>
 
     <div v-if="showGrantModal" class="modal-overlay" @click.self="showGrantModal = false">
+
+    <div v-if="showActivityForm" class="modal-overlay" @click.self="showActivityForm = false">
+      <div class="modal card" style="max-width: 640px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingActivity ? '编辑动态' : '发布作者动态' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showActivityForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">作者ID *</label>
+            <input v-model.number="activityForm.authorId" type="number" class="form-input" required :disabled="!!editingActivity">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">动态类型 *</label>
+              <select v-model="activityForm.type" class="form-select">
+                <option value="NEW_ZINE">📖 新刊发布</option>
+                <option value="UPDATE">📝 内容更新</option>
+                <option value="EVENT">🎉 活动通知</option>
+                <option value="ACHIEVEMENT">🏆 成就达成</option>
+                <option value="OTHER">📢 其他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="activityForm.isPublic">
+                <span>公开</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">标题 *</label>
+            <input v-model="activityForm.title" type="text" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">内容</label>
+            <textarea v-model="activityForm.content" class="form-textarea" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">封面图片</label>
+            <input v-model="activityForm.coverImage" type="text" class="form-input" placeholder="图片URL">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">链接类型</label>
+              <select v-model="activityForm.linkType" class="form-select">
+                <option :value="null">无链接</option>
+                <option value="zines">刊物</option>
+                <option value="crowdfundings">众筹</option>
+                <option value="events">活动</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">链接ID</label>
+              <input v-model.number="activityForm.linkId" type="number" class="form-input" placeholder="留空则无链接">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showActivityForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitActivityForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingActivity ? '保存' : '发布') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showGrantModal" class="modal-overlay" @click.self="showGrantModal = false">
       <div class="modal card" style="max-width: 460px;">
         <div class="modal-header">
           <h3 class="font-semibold">为用户开通会员</h3>
@@ -598,6 +794,8 @@ const tabs = [
   { value: 'exclusive', label: '专属刊物', icon: '📖' },
   { value: 'early', label: '提前阅读', icon: '⏰' },
   { value: 'members', label: '会员用户', icon: '👥' },
+  { value: 'substats', label: '订阅统计', icon: '📈' },
+  { value: 'activities', label: '作者动态', icon: '📡' },
   { value: 'messages', label: '消息触达', icon: '💬' },
   { value: 'config', label: '系统配置', icon: '⚙️' }
 ]
@@ -628,6 +826,19 @@ const earlyItems = ref([])
 const showEarlyForm = ref(false)
 const editingEarly = ref(null)
 const earlyForm = ref({})
+
+const loadingSubStats = ref(false)
+const subStats = ref({})
+const topZineStats = ref([])
+const topAuthorStats = ref([])
+const maxZineSubCount = computed(() => Math.max(1, ...topZineStats.value.map(z => z.subscriberCount || 0)))
+const maxAuthorFollowerCount = computed(() => Math.max(1, ...topAuthorStats.value.map(a => a.followerCount || 0)))
+
+const loadingActivities = ref(false)
+const activities = ref([])
+const showActivityForm = ref(false)
+const editingActivity = ref(null)
+const activityForm = ref({})
 
 const loadingMembers = ref(false)
 const members = ref([])
@@ -663,6 +874,8 @@ const loadTabData = () => {
   if (currentTab.value === 'exclusive') loadExclusive()
   if (currentTab.value === 'early') loadEarly()
   if (currentTab.value === 'members') loadMembers()
+  if (currentTab.value === 'substats') loadSubStats()
+  if (currentTab.value === 'activities') loadActivities()
   if (currentTab.value === 'config') loadConfig()
 }
 
@@ -945,6 +1158,81 @@ const saveConfig = async () => {
     showToast('配置已保存')
   } catch (e) {
     showToast(e.error || '保存失败', 'error')
+  }
+}
+
+const loadSubStats = async () => {
+  loadingSubStats.value = true
+  try {
+    const res = await api.get('/admin/subscriptions/subscriptions/stats')
+    subStats.value = res.stats || {}
+    topZineStats.value = res.topZineStats || []
+    topAuthorStats.value = res.topAuthorStats || []
+  } catch (e) {
+    showToast(e.error || '加载失败', 'error')
+  } finally {
+    loadingSubStats.value = false
+  }
+}
+
+const loadActivities = async () => {
+  loadingActivities.value = true
+  try {
+    const res = await api.get('/admin/subscriptions/activities')
+    activities.value = res.activities
+  } catch (e) {
+    showToast(e.error || '加载失败', 'error')
+  } finally {
+    loadingActivities.value = false
+  }
+}
+
+const openActivityForm = (activity = null) => {
+  editingActivity.value = activity
+  if (activity) {
+    activityForm.value = { ...activity }
+  } else {
+    activityForm.value = {
+      authorId: null,
+      type: 'OTHER',
+      title: '',
+      content: '',
+      coverImage: '',
+      linkType: null,
+      linkId: null,
+      isPublic: true
+    }
+  }
+  showActivityForm.value = true
+}
+
+const submitActivityForm = async () => {
+  submitting.value = true
+  try {
+    if (editingActivity.value) {
+      await api.put(`/admin/subscriptions/activities/${editingActivity.value.id}`, activityForm.value)
+      showToast('更新成功')
+    } else {
+      await api.post('/admin/subscriptions/activities', activityForm.value)
+      showToast('发布成功')
+    }
+    showActivityForm.value = false
+    await loadActivities()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteActivity = async (activity) => {
+  if (!confirm(`确定删除动态「${activity.title}」吗？`)) return
+  try {
+    await api.del(`/admin/subscriptions/activities/${activity.id}`)
+    showToast('删除成功')
+    await loadActivities()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
   }
 }
 

@@ -34,14 +34,49 @@
           </div>
 
           <div class="actions">
-            <button
-              class="btn btn-lg"
-              :class="subscribed ? 'btn-secondary' : 'btn-primary'"
-              :disabled="!authStore.isAuthenticated"
-              @click="toggleSubscribe"
-            >
-              {{ subscribed ? '✓ 已订阅' : '★ 订阅刊物' }}
-            </button>
+            <template v-if="!subscribed">
+              <button
+                class="btn btn-primary btn-lg"
+                :disabled="!authStore.isAuthenticated"
+                @click="subscribeWithTier('FREE')"
+              >
+                ⭐ 免费订阅
+              </button>
+              <button
+                class="btn btn-lg"
+                style="background: #2563eb; color: white; border-color: #2563eb;"
+                :disabled="!authStore.isAuthenticated"
+                @click="subscribeWithTier('STANDARD')"
+              >
+                🌟 标准订阅
+              </button>
+              <button
+                class="btn btn-lg"
+                style="background: #d97706; color: white; border-color: #d97706;"
+                :disabled="!authStore.isAuthenticated"
+                @click="subscribeWithTier('PREMIUM')"
+              >
+                👑 高级订阅
+              </button>
+            </template>
+            <template v-else>
+              <button
+                class="btn btn-secondary btn-lg"
+                @click="toggleSubscribe"
+              >
+                ✓ 已订阅 ({{ tierLabel(subTier) }})
+              </button>
+              <button class="btn btn-ghost btn-sm" @click="showTierSwitch = true" v-if="!showTierSwitch">切换等级</button>
+              <div v-if="showTierSwitch" class="tier-switch-row">
+                <button
+                  v-for="t in tierOptions"
+                  :key="t.value"
+                  :class="['tier-switch-btn', { active: subTier === t.value }]"
+                  @click="switchTier(t.value)"
+                >{{ t.icon }} {{ t.label }}</button>
+                <button class="btn btn-ghost btn-sm" @click="showTierSwitch = false">收起</button>
+              </div>
+            </template>
             <button class="btn btn-secondary btn-lg" @click="handleLike">
               ❤ 收藏 ({{ zine.likes }})
             </button>
@@ -193,6 +228,19 @@ const showToast = inject('showToast')
 const loading = ref(true)
 const zine = ref(null)
 const subscribed = ref(false)
+const subTier = ref('FREE')
+const showTierSwitch = ref(false)
+
+const tierOptions = [
+  { value: 'FREE', label: '免费', icon: '⭐' },
+  { value: 'STANDARD', label: '标准', icon: '🌟' },
+  { value: 'PREMIUM', label: '高级', icon: '👑' }
+]
+
+const tierLabel = (tier) => {
+  const labels = { FREE: '免费', STANDARD: '标准', PREMIUM: '高级' }
+  return labels[tier] || '免费'
+}
 
 const comments = ref([])
 const commentContent = ref('')
@@ -239,7 +287,42 @@ const checkSubscription = async () => {
   try {
     const res = await api.get(`/subscriptions/check/${zine.value.id}`)
     subscribed.value = res.subscribed
+    subTier.value = res.tier || 'FREE'
   } catch (e) {}
+}
+
+const subscribeWithTier = async (tier) => {
+  if (!authStore.isAuthenticated) {
+    showToast('请先登录后再操作', 'warning')
+    return
+  }
+  try {
+    await api.post(`/subscriptions/${zine.value.id}`, {
+      tier,
+      notifySeriesUpdate: tier !== 'FREE',
+      notifyAuthorActivity: tier === 'PREMIUM'
+    })
+    subscribed.value = true
+    subTier.value = tier
+    showToast(`${tierLabel(tier)}订阅成功！`, 'success')
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
+const switchTier = async (tier) => {
+  try {
+    await api.put(`/subscriptions/${zine.value.id}`, {
+      tier,
+      notifySeriesUpdate: tier !== 'FREE',
+      notifyAuthorActivity: tier === 'PREMIUM'
+    })
+    subTier.value = tier
+    showTierSwitch.value = false
+    showToast(`已切换为${tierLabel(tier)}订阅`, 'success')
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
 }
 
 const toggleSubscribe = async () => {
@@ -249,13 +332,13 @@ const toggleSubscribe = async () => {
   }
   try {
     if (subscribed.value) {
+      if (!confirm('确定要取消订阅吗？')) return
       await api.delete(`/subscriptions/${zine.value.id}`)
       subscribed.value = false
+      subTier.value = 'FREE'
       showToast('已取消订阅', 'success')
     } else {
-      await api.post(`/subscriptions/${zine.value.id}`)
-      subscribed.value = true
-      showToast('订阅成功！', 'success')
+      await subscribeWithTier('FREE')
     }
   } catch (e) {
     showToast(e.error || '操作失败', 'error')
@@ -490,6 +573,29 @@ onMounted(async () => {
   gap: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
+}
+.tier-switch-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tier-switch-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tier-switch-btn:hover { border-color: var(--accent); }
+.tier-switch-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 .stats-row {
   display: flex;
