@@ -106,6 +106,8 @@ model User {
   WithdrawalRequest_WithdrawalRequest_userIdToUser     WithdrawalRequest[]        @relation("WithdrawalRequest_userIdToUser")
   workflowRecords                                      WorkflowRecord[]
   quickReplies                                         QuickReply[]
+  rejectTemplates                                      RejectTemplate[]
+  batchReviewRecords                                   BatchReviewRecord[]
   zines                                                Zine[]
 }
 
@@ -1173,6 +1175,45 @@ model QuickReply {
 
   @@index([userId])
   @@index([userId, isActive])
+}
+
+model RejectTemplate {
+  id         Int       @id @default(autoincrement())
+  title      String
+  content    String
+  category   String    @default("GENERAL")
+  sortOrder  Int       @default(0)
+  usageCount Int       @default(0)
+  isActive   Boolean   @default(true)
+  isGlobal   Boolean   @default(true)
+  creatorId  Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  creator    User?     @relation(fields: [creatorId], references: [id])
+  batchRecords BatchReviewRecord[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([isGlobal])
+}
+
+model BatchReviewRecord {
+  id            Int            @id @default(autoincrement())
+  reviewerId    Int
+  action        String
+  submissionIds String
+  successCount  Int            @default(0)
+  failCount     Int            @default(0)
+  reason        String?
+  templateId    Int?
+  metadata      String         @default("{}")
+  createdAt     DateTime       @default(now())
+  reviewer      User           @relation(fields: [reviewerId], references: [id])
+  template      RejectTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([reviewerId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model ReviewPerformance {

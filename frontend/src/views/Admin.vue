@@ -66,10 +66,60 @@
             v-for="f in subFilters"
             :key="f.value"
             :class="['btn', subStatus === f.value ? 'btn-primary' : 'btn-secondary', 'btn-sm']"
-            @click="subStatus = f.value; loadSubmissions(1)"
+            @click="subStatus = f.value; clearSelection(); loadSubmissions(1)"
           >
             {{ f.label }}
           </button>
+        </div>
+        <div class="flex gap-sm">
+          <button
+            v-if="subStatus === 'PENDING' || subStatus === 'all'"
+            class="btn btn-ghost btn-sm"
+            @click="openTemplateManager()"
+          >
+            📋 驳回模板
+          </button>
+          <button
+            v-if="subStatus === 'PENDING' || subStatus === 'all'"
+            class="btn btn-ghost btn-sm"
+            @click="openReviewStats()"
+          >
+            📊 审核统计
+          </button>
+        </div>
+      </div>
+
+      <div v-if="pendingSubs.length > 0" class="card batch-actions-bar" style="padding: 12px 20px; margin-bottom: 16px;">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-sm">
+            <label class="checkbox-label" style="margin: 0;">
+              <input type="checkbox" v-model="selectAllPending" @change="toggleSelectAll">
+              <span>全选待审核 ({{ pendingSubs.length }})</span>
+            </label>
+            <span class="text-sm text-muted">已选择 {{ selectedIds.length }} 项</span>
+          </div>
+          <div class="flex gap-sm">
+            <button
+              class="btn btn-primary btn-sm"
+              :disabled="selectedIds.length === 0"
+              @click="openBatchApprove()"
+            >
+              ✓ 批量通过 ({{ selectedIds.length }})
+            </button>
+            <button
+              class="btn btn-outline btn-sm"
+              :disabled="selectedIds.length === 0"
+              @click="openBatchReject()"
+            >
+              ✕ 批量驳回 ({{ selectedIds.length }})
+            </button>
+            <button
+              class="btn btn-ghost btn-sm"
+              @click="clearSelection()"
+            >
+              取消选择
+            </button>
+          </div>
         </div>
       </div>
 
@@ -82,9 +132,18 @@
         <div class="empty-state-text">暂无投稿</div>
       </div>
       <div v-else class="submissions-list">
-        <div v-for="sub in allSubs" :key="sub.id" class="sub-admin-card card">
+        <div v-for="sub in allSubs" :key="sub.id" class="sub-admin-card card" :data-sub-id="sub.id">
           <div class="sub-admin-header">
             <div class="user-info">
+              <template v-if="sub.status === 'PENDING'">
+                <label class="checkbox-label" style="margin-right: 12px;">
+                  <input
+                    type="checkbox"
+                    :value="sub.id"
+                    v-model="selectedIds"
+                  >
+                </label>
+              </template>
               <img :src="sub.user?.avatar" class="sub-user-avatar">
               <div>
                 <div class="font-medium">{{ sub.user?.username }}</div>
@@ -1254,6 +1313,15 @@
           <button class="btn btn-ghost btn-sm" @click="showReject = false">✕</button>
         </div>
         <div class="modal-body">
+          <div class="form-group" v-if="rejectTemplates.length > 0">
+            <label class="form-label">选择驳回模板</label>
+            <select v-model="singleRejectTemplateId" class="form-select" @change="applyTemplateToSingle">
+              <option :value="null">-- 不使用模板 --</option>
+              <option v-for="t in rejectTemplates" :key="t.id" :value="t.id">
+                {{ t.title }} (使用 {{ t.usageCount }} 次)
+              </option>
+            </select>
+          </div>
           <div class="form-group">
             <label class="form-label">驳回原因（建议填写，帮助作者改进）</label>
             <textarea v-model="rejectReason" class="form-textarea" rows="4" placeholder="请说明驳回原因..."></textarea>
@@ -1264,6 +1332,276 @@
           <button class="btn btn-outline" @click="submitReject" :disabled="submitting">
             {{ submitting ? '处理中...' : '确认驳回' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showBatchApprove" class="modal-overlay" @click.self="showBatchApprove = false">
+      <div class="modal card" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">批量通过 · 发布为刊物</h3>
+          <button class="btn btn-ghost btn-sm" @click="showBatchApprove = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info" style="margin-bottom: 16px;">
+            <strong>⚠️ 注意：</strong>将批量通过 {{ selectedIds.length }} 篇投稿，全部使用以下配置发布。
+          </div>
+          <div class="form-group">
+            <label class="form-label">分类</label>
+            <select v-model="batchApproveForm.category" class="form-select" required>
+              <option value="文学">文学创作</option>
+              <option value="艺术">艺术插画</option>
+              <option value="摄影">摄影作品</option>
+              <option value="音乐">音乐文化</option>
+              <option value="生活">生活方式</option>
+              <option value="亚文化">亚文化</option>
+              <option value="学术">独立学术</option>
+              <option value="漫画">独立漫画</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">标签（逗号分隔）</label>
+            <input v-model="batchApproveForm.tagsText" type="text" class="form-input" placeholder="例如: 原创, 随笔, 生活">
+          </div>
+          <div class="form-group">
+            <label class="form-label">描述简介（可选，留空则使用投稿内容前200字）</label>
+            <textarea v-model="batchApproveForm.description" class="form-textarea" rows="2" placeholder="刊物的简短介绍"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showBatchApprove = false">取消</button>
+          <button class="btn btn-primary" @click="submitBatchApprove" :disabled="submitting">
+            {{ submitting ? '处理中...' : `确认通过 ${selectedIds.length} 篇` }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showBatchReject" class="modal-overlay" @click.self="showBatchReject = false">
+      <div class="modal card" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">批量驳回</h3>
+          <button class="btn btn-ghost btn-sm" @click="showBatchReject = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning" style="margin-bottom: 16px;">
+            <strong>⚠️ 注意：</strong>将批量驳回 {{ selectedIds.length }} 篇投稿。
+          </div>
+          <div class="form-group" v-if="rejectTemplates.length > 0">
+            <label class="form-label">选择驳回模板</label>
+            <select v-model="batchRejectForm.templateId" class="form-select" @change="applyTemplateToBatch">
+              <option :value="null">-- 不使用模板 --</option>
+              <option v-for="t in rejectTemplates" :key="t.id" :value="t.id">
+                {{ t.title }} (使用 {{ t.usageCount }} 次)
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">驳回原因</label>
+            <textarea v-model="batchRejectForm.reason" class="form-textarea" rows="4" placeholder="请说明驳回原因..."></textarea>
+          </div>
+          <div class="text-xs text-muted mt-sm">
+            {{ batchRejectForm.templateId ? '模板内容将与自定义原因合并使用。' : '请填写驳回原因或选择模板。' }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showBatchReject = false">取消</button>
+          <button class="btn btn-outline" @click="submitBatchReject" :disabled="submitting || !batchRejectForm.reason && !batchRejectForm.templateId">
+            {{ submitting ? '处理中...' : `确认驳回 ${selectedIds.length} 篇` }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showTemplateManager" class="modal-overlay" @click.self="showTemplateManager = false">
+      <div class="modal card" style="max-width: 720px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">驳回模板管理</h3>
+          <button class="btn btn-ghost btn-sm" @click="showTemplateManager = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="flex justify-between items-center mb">
+            <div class="text-sm text-muted">共 {{ rejectTemplates.length }} 个模板</div>
+            <button class="btn btn-primary btn-sm" @click="openTemplateForm()">+ 新建模板</button>
+          </div>
+          <div v-if="loadingTemplates" class="empty-state py-8">
+            <div class="empty-state-icon">⏳</div>
+            <div class="empty-state-text text-sm">加载中...</div>
+          </div>
+          <div v-else-if="rejectTemplates.length === 0" class="empty-state py-8">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-text text-sm">暂无驳回模板</div>
+          </div>
+          <div v-else class="template-list">
+            <div v-for="t in rejectTemplates" :key="t.id" class="template-item card" style="padding: 16px; margin-bottom: 12px;">
+              <div class="flex justify-between items-start">
+                <div style="flex: 1;">
+                  <div class="flex items-center gap-sm mb-sm">
+                    <span class="font-medium">{{ t.title }}</span>
+                    <span class="tag">{{ t.category }}</span>
+                    <span class="text-xs text-muted">使用 {{ t.usageCount }} 次</span>
+                    <span :class="['badge', t.isActive ? 'badge-approved' : 'badge-rejected']">
+                      {{ t.isActive ? '启用' : '禁用' }}
+                    </span>
+                  </div>
+                  <div class="text-sm text-muted" style="white-space: pre-wrap;">{{ t.content }}</div>
+                  <div class="text-xs text-tertiary mt-sm">
+                    创建者: {{ t.creator?.username || '系统' }} · {{ formatDate(t.createdAt) }}
+                  </div>
+                </div>
+                <div class="flex gap-xs" style="margin-left: 12px;">
+                  <button class="btn btn-ghost btn-sm" @click="openTemplateForm(t)">编辑</button>
+                  <button class="btn btn-ghost btn-sm danger-btn" @click="deleteTemplate(t)">删除</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showTemplateManager = false">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showTemplateForm" class="modal-overlay" @click.self="showTemplateForm = false">
+      <div class="modal card" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">{{ editingTemplate ? '编辑模板' : '新建模板' }}</h3>
+          <button class="btn btn-ghost btn-sm" @click="showTemplateForm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">模板标题 <span style="color: var(--danger);">*</span></label>
+            <input v-model="templateForm.title" type="text" class="form-input" placeholder="例如: 内容质量不足" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label class="form-label">分类</label>
+              <select v-model="templateForm.category" class="form-select">
+                <option value="GENERAL">通用</option>
+                <option value="CONTENT">内容质量</option>
+                <option value="FORMAT">格式规范</option>
+                <option value="VIOLATION">违规内容</option>
+                <option value="OTHER">其他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">排序</label>
+              <input v-model.number="templateForm.sortOrder" type="number" class="form-input" min="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">模板内容 <span style="color: var(--danger);">*</span></label>
+            <textarea v-model="templateForm.content" class="form-textarea" rows="4" placeholder="请输入驳回原因模板..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="templateForm.isActive">
+              <span>启用此模板</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showTemplateForm = false">取消</button>
+          <button class="btn btn-primary" @click="submitTemplateForm" :disabled="submitting">
+            {{ submitting ? '处理中...' : (editingTemplate ? '保存' : '创建') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showReviewStats" class="modal-overlay" @click.self="showReviewStats = false">
+      <div class="modal card" style="max-width: 800px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">审核统计</h3>
+          <button class="btn btn-ghost btn-sm" @click="showReviewStats = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="flex gap-sm mb">
+            <button
+              v-for="p in reviewPeriods"
+              :key="p.value"
+              :class="['btn', 'btn-sm', reviewPeriod === p.value ? 'btn-primary' : 'btn-secondary']"
+              @click="reviewPeriod = p.value; loadReviewStats()"
+            >
+              {{ p.label }}
+            </button>
+          </div>
+          <div v-if="loadingReviewStats" class="empty-state py-8">
+            <div class="empty-state-icon">⏳</div>
+            <div class="empty-state-text text-sm">加载中...</div>
+          </div>
+          <div v-else>
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+              <div class="stat-card card" style="padding: 16px;">
+                <div class="stat-num" style="font-size: 24px; font-weight: bold; color: #10b981;">{{ reviewStatsData.stats?.totalApproved || 0 }}</div>
+                <div class="text-sm text-muted">通过数</div>
+              </div>
+              <div class="stat-card card" style="padding: 16px;">
+                <div class="stat-num" style="font-size: 24px; font-weight: bold; color: #ef4444;">{{ reviewStatsData.stats?.totalRejected || 0 }}</div>
+                <div class="text-sm text-muted">驳回数</div>
+              </div>
+              <div class="stat-card card" style="padding: 16px;">
+                <div class="stat-num" style="font-size: 24px; font-weight: bold; color: #f59e0b;">{{ reviewStatsData.stats?.approvalRate || 0 }}%</div>
+                <div class="text-sm text-muted">通过率</div>
+              </div>
+              <div class="stat-card card" style="padding: 16px;">
+                <div class="stat-num" style="font-size: 24px; font-weight: bold; color: #8b5cf6;">{{ reviewStatsData.stats?.totalBatchRecords || 0 }}</div>
+                <div class="text-sm text-muted">批量操作</div>
+              </div>
+            </div>
+            <div v-if="reviewStatsData.reviewerRanking?.length > 0" class="card" style="padding: 16px; margin-bottom: 16px;">
+              <h4 class="font-semibold mb">🏆 审核排行榜</h4>
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>排名</th>
+                    <th>审核员</th>
+                    <th>通过</th>
+                    <th>驳回</th>
+                    <th>总数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r, i) in reviewStatsData.reviewerRanking" :key="r.id">
+                    <td><span class="text-lg">{{ i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}` }}</span></td>
+                    <td>
+                      <div class="flex items-center gap-sm">
+                        <img :src="r.avatar" style="width: 24px; height: 24px; border-radius: 50%;">
+                        <span>{{ r.username }}</span>
+                      </div>
+                    </td>
+                    <td style="color: #10b981;">{{ r.approved }}</td>
+                    <td style="color: #ef4444;">{{ r.rejected }}</td>
+                    <td class="font-medium">{{ r.total }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-if="reviewStatsData.recentActivities?.length > 0" class="card" style="padding: 16px;">
+              <h4 class="font-semibold mb">📝 最近审核记录</h4>
+              <div class="recent-list">
+                <div v-for="a in reviewStatsData.recentActivities.slice(0, 10)" :key="a.id" class="recent-item" style="padding: 8px 0;">
+                  <div class="flex items-center gap-sm">
+                    <img :src="a.operator?.avatar" style="width: 28px; height: 28px; border-radius: 50%;">
+                    <div>
+                      <div class="text-sm">
+                        <span class="font-medium">{{ a.operator?.username }}</span>
+                        <span :class="['badge', a.action === 'APPROVE' ? 'badge-approved' : 'badge-rejected']" style="margin: 0 8px;">
+                          {{ a.action === 'APPROVE' ? '通过' : '驳回' }}
+                        </span>
+                        <span class="text-muted">《{{ a.targetTitle }}》</span>
+                      </div>
+                      <div class="text-xs text-tertiary">{{ formatDateTime(a.createdAt) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showReviewStats = false">关闭</button>
         </div>
       </div>
     </div>
@@ -1396,6 +1734,31 @@ const badgeForm = ref({ name: '', code: '', icon: '', description: '', category:
 const achievementForm = ref({ name: '', code: '', description: '', category: 'CREATION', condition: '', targetValue: 1, expReward: 0, badgeId: null, sortOrder: 0, isActive: true })
 const taskForm = ref({ name: '', code: '', description: '', category: 'DAILY', type: 'SUBMISSION', condition: '', targetValue: 1, expReward: 10, sortOrder: 0, isActive: true })
 const benefitForm = ref({ name: '', code: '', description: '', type: 'PRIVILEGE', value: '', minLevel: 1, isActive: true })
+
+const selectedIds = ref([])
+const selectAllPending = ref(false)
+const showBatchApprove = ref(false)
+const showBatchReject = ref(false)
+const showTemplateManager = ref(false)
+const showTemplateForm = ref(false)
+const showReviewStats = ref(false)
+const singleRejectTemplateId = ref(null)
+const batchApproveForm = ref({ category: '文学', tagsText: '', description: '' })
+const batchRejectForm = ref({ templateId: null, reason: '' })
+const rejectTemplates = ref([])
+const loadingTemplates = ref(false)
+const editingTemplate = ref(null)
+const templateForm = ref({ title: '', content: '', category: 'GENERAL', sortOrder: 0, isActive: true })
+const reviewPeriod = ref('TODAY')
+const reviewPeriods = [
+  { label: '今日', value: 'TODAY' },
+  { label: '近7天', value: 'WEEK' },
+  { label: '本月', value: 'MONTH' }
+]
+const reviewStatsData = ref({})
+const loadingReviewStats = ref(false)
+
+const pendingSubs = computed(() => allSubs.value.filter(s => s.status === 'PENDING'))
 
 const statList = computed(() => [
   { label: '用户总数', value: stats.value.totalUsers || 0, icon: '👥', color: '#3b82f6' },
@@ -1914,16 +2277,219 @@ const submitReject = async () => {
   submitting.value = true
   try {
     await api.post(`/admin/submissions/${selectedSub.value.id}/reject`, {
-      reason: rejectReason.value
+      reason: rejectReason.value,
+      templateId: singleRejectTemplateId.value || undefined
     })
     showToast('已驳回', 'success')
     showReject.value = false
+    singleRejectTemplateId.value = null
     loadSubmissions()
     loadOverview()
   } catch (e) {
     showToast(e.error || '操作失败', 'error')
   } finally {
     submitting.value = false
+  }
+}
+
+const clearSelection = () => {
+  selectedIds.value = []
+  selectAllPending.value = false
+}
+
+const toggleSelectAll = () => {
+  if (selectAllPending.value) {
+    selectedIds.value = pendingSubs.value.map(s => s.id)
+  } else {
+    selectedIds.value = []
+  }
+}
+
+const openBatchApprove = () => {
+  if (selectedIds.value.length === 0) {
+    showToast('请先选择要审核的投稿', 'warning')
+    return
+  }
+  batchApproveForm.value = { category: '文学', tagsText: '', description: '' }
+  showBatchApprove.value = true
+}
+
+const openBatchReject = () => {
+  if (selectedIds.value.length === 0) {
+    showToast('请先选择要驳回的投稿', 'warning')
+    return
+  }
+  batchRejectForm.value = { templateId: null, reason: '' }
+  showBatchReject.value = true
+}
+
+const submitBatchApprove = async () => {
+  if (selectedIds.value.length === 0) {
+    showToast('请先选择要审核的投稿', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    const res = await api.post('/admin/submissions/batch-approve', {
+      ids: selectedIds.value,
+      category: batchApproveForm.value.category,
+      tags: batchApproveForm.value.tagsText,
+      description: batchApproveForm.value.description
+    })
+    showToast(res.message, res.failCount > 0 ? 'warning' : 'success')
+    if (res.failedItems && res.failedItems.length > 0) {
+      console.warn('批量审核失败项:', res.failedItems)
+    }
+    showBatchApprove.value = false
+    clearSelection()
+    loadSubmissions()
+    loadOverview()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const submitBatchReject = async () => {
+  if (selectedIds.value.length === 0) {
+    showToast('请先选择要驳回的投稿', 'warning')
+    return
+  }
+  if (!batchRejectForm.value.reason && !batchRejectForm.value.templateId) {
+    showToast('请填写驳回原因或选择驳回模板', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    const res = await api.post('/admin/submissions/batch-reject', {
+      ids: selectedIds.value,
+      reason: batchRejectForm.value.reason,
+      templateId: batchRejectForm.value.templateId || undefined
+    })
+    showToast(res.message, res.failCount > 0 ? 'warning' : 'success')
+    if (res.failedItems && res.failedItems.length > 0) {
+      console.warn('批量驳回失败项:', res.failedItems)
+    }
+    showBatchReject.value = false
+    clearSelection()
+    loadRejectTemplates()
+    loadSubmissions()
+    loadOverview()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const loadRejectTemplates = async () => {
+  try {
+    const res = await api.get('/admin/reject-templates')
+    rejectTemplates.value = res.templates || []
+  } catch (e) {
+    console.error('加载驳回模板失败:', e)
+  }
+}
+
+const openTemplateManager = async () => {
+  loadingTemplates.value = true
+  showTemplateManager.value = true
+  try {
+    await loadRejectTemplates()
+  } finally {
+    loadingTemplates.value = false
+  }
+}
+
+const openTemplateForm = (template = null) => {
+  editingTemplate.value = template
+  if (template) {
+    templateForm.value = {
+      title: template.title,
+      content: template.content,
+      category: template.category,
+      sortOrder: template.sortOrder,
+      isActive: template.isActive
+    }
+  } else {
+    templateForm.value = { title: '', content: '', category: 'GENERAL', sortOrder: 0, isActive: true }
+  }
+  showTemplateForm.value = true
+}
+
+const submitTemplateForm = async () => {
+  if (!templateForm.value.title || !templateForm.value.content) {
+    showToast('请填写模板标题和内容', 'warning')
+    return
+  }
+  submitting.value = true
+  try {
+    if (editingTemplate.value) {
+      await api.put(`/admin/reject-templates/${editingTemplate.value.id}`, templateForm.value)
+      showToast('模板更新成功', 'success')
+    } else {
+      await api.post('/admin/reject-templates', templateForm.value)
+      showToast('模板创建成功', 'success')
+    }
+    showTemplateForm.value = false
+    await loadRejectTemplates()
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const deleteTemplate = async (template) => {
+  if (!confirm(`确定删除模板「${template.title}」？`)) return
+  try {
+    await api.delete(`/admin/reject-templates/${template.id}`)
+    showToast('已删除', 'success')
+    await loadRejectTemplates()
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
+}
+
+const applyTemplateToSingle = () => {
+  if (singleRejectTemplateId.value) {
+    const template = rejectTemplates.value.find(t => t.id === singleRejectTemplateId.value)
+    if (template) {
+      rejectReason.value = template.content
+    }
+  }
+}
+
+const applyTemplateToBatch = () => {
+  if (batchRejectForm.value.templateId) {
+    const template = rejectTemplates.value.find(t => t.id === batchRejectForm.value.templateId)
+    if (template) {
+      batchRejectForm.value.reason = template.content
+    }
+  }
+}
+
+const openReviewStats = async () => {
+  loadingReviewStats.value = true
+  showReviewStats.value = true
+  try {
+    await loadReviewStats()
+  } finally {
+    loadingReviewStats.value = false
+  }
+}
+
+const loadReviewStats = async () => {
+  loadingReviewStats.value = true
+  try {
+    const params = new URLSearchParams({ period: reviewPeriod.value })
+    const res = await api.get(`/admin/review-stats?${params}`)
+    reviewStatsData.value = res || {}
+  } catch (e) {
+    console.error('加载审核统计失败:', e)
+  } finally {
+    loadingReviewStats.value = false
   }
 }
 
@@ -2176,7 +2742,10 @@ const removeFeatured = async (item) => {
   }
 }
 
-onMounted(() => loadOverview())
+onMounted(() => {
+  loadOverview()
+  loadRejectTemplates()
+})
 </script>
 
 <style scoped>
@@ -2543,5 +3112,49 @@ onMounted(() => loadOverview())
 .page-info {
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+.batch-actions-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(212, 98, 74, 0.15);
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alert-info {
+  background: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.alert-warning {
+  background: #fff7e6;
+  color: #d46b08;
+  border: 1px solid #ffd591;
+}
+
+.template-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.template-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.growth-subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 </style>
