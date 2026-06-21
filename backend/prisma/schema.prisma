@@ -87,6 +87,11 @@ model User {
   competitionEntries CompetitionEntry[]
   judgedCompetitions Competition[] @relation("CompetitionJudge")
   competitionScores CompetitionScore[]
+
+  licenseApplications CopyrightLicense[] @relation("LicenseApplicant")
+  authoredLicenses CopyrightLicense[] @relation("LicenseAuthor")
+  reviewedLicenses CopyrightLicense[] @relation("LicenseReviewer")
+  licenseOperationLogs CopyrightLicenseLog[] @relation("LicenseLogOperator")
 }
 
 model ReadingBook {
@@ -1550,4 +1555,89 @@ model CompetitionScore {
   @@unique([entryId, judgeId])
   @@index([entryId])
   @@index([judgeId])
+}
+
+model CopyrightLicense {
+  id                   Int                  @id @default(autoincrement())
+  licenseNo            String               @unique
+  title                String
+  workId               Int
+  workType             String
+  workTitle            String
+  workCoverImage       String?
+
+  purposeCategory      String               @default("OTHER")
+  purposeDetail        String
+  usageScope           String               @default("PERSONAL")
+  useRegions           String               @default("[]")
+  commercialUse        Boolean              @default(false)
+  derivativeAllowed    Boolean              @default(false)
+  distributeAllowed    Boolean              @default(false)
+  attributionRequired  Boolean              @default(true)
+
+  licenseType          String               @default("STANDARD")
+  licenseFee           Float                @default(0)
+  paymentStatus        String               @default("UNPAID")
+  startDate            DateTime?
+  endDate              DateTime?
+  durationDays         Int                  @default(0)
+
+  applicantId          Int
+  applicant            User                 @relation("LicenseApplicant", fields: [applicantId], references: [id])
+  applicantContact     String?
+  applicantCompany     String?
+
+  authorId             Int
+  author               User                 @relation("LicenseAuthor", fields: [authorId], references: [id])
+  authorConfirmed      Boolean              @default(false)
+  authorConfirmedAt    DateTime?
+  authorConfirmRemark  String?
+  authorAskedPrice     Float?
+  authorContractTerms  String?
+
+  status               String               @default("DRAFT")
+  rejectionReason      String?
+
+  reviewerId           Int?
+  reviewer             User?                @relation("LicenseReviewer", fields: [reviewerId], references: [id])
+  reviewedAt           DateTime?
+  reviewRemark         String?
+
+  contractContent      String?
+  contractFile         String?
+  contractSigned       Boolean              @default(false)
+  contractSignedAt     DateTime?
+  attachments          String               @default("[]")
+
+  viewedCount          Int                  @default(0)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  logs                 CopyrightLicenseLog[]
+
+  @@index([applicantId])
+  @@index([authorId])
+  @@index([status])
+  @@index([workType, workId])
+  @@index([createdAt])
+  @@index([licenseType])
+}
+
+model CopyrightLicenseLog {
+  id          Int               @id @default(autoincrement())
+  licenseId   Int
+  license     CopyrightLicense  @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  action      String
+  fromStatus  String?
+  toStatus    String?
+  detail      String?
+  metadata    String            @default("{}")
+  operatorId  Int
+  operator    User              @relation("LicenseLogOperator", fields: [operatorId], references: [id])
+  createdAt   DateTime          @default(now())
+
+  @@index([licenseId])
+  @@index([operatorId])
+  @@index([action])
+  @@index([createdAt])
 }

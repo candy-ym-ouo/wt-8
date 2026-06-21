@@ -72,6 +72,8 @@ const routes = [
   { path: '/competitions/:id/edit', name: 'EditCompetition', component: () => import('@/views/NewCompetition.vue'), meta: { requiresAuth: true } },
   { path: '/competitions/:id', name: 'CompetitionDetail', component: () => import('@/views/CompetitionDetail.vue') },
   { path: '/admin/competitions', name: 'AdminCompetitions', component: () => import('@/views/AdminCompetitions.vue'), meta: { requiresAdmin: true } },
+  { path: '/copyright-licensing', name: 'CopyrightLicensing', component: () => import('@/views/CopyrightLicensing.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/copyright-licenses', name: 'AdminCopyrightLicenses', component: () => import('@/views/AdminCopyrightLicenses.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 
