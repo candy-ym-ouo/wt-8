@@ -172,7 +172,15 @@ async function routes(fastify, options) {
       return reply.code(400).send({ error: '当前状态不可提交' });
     }
 
-    const { scheduledAt } = request.body;
+    const { title, content, images, scheduledAt } = request.body;
+
+    if (!title && !submission.title) {
+      return reply.code(400).send({ error: '标题为必填项' });
+    }
+    if (!content && !submission.content) {
+      return reply.code(400).send({ error: '内容为必填项' });
+    }
+
     let status = 'PENDING';
     let scheduledAtDate = null;
 
@@ -185,12 +193,22 @@ async function routes(fastify, options) {
       scheduledAtDate = scheduleTime;
     }
 
+    const finalTitle = title || submission.title;
+    const finalContent = content || submission.content;
+    const finalImages = images !== undefined ? JSON.stringify(images) : submission.images;
+
     const updated = await prisma.submission.update({
       where: { id: submission.id },
       data: {
+        title: finalTitle,
+        content: finalContent,
+        images: finalImages,
         status,
         scheduledAt: scheduledAtDate,
         withdrawnAt: null,
+        rejectionReason: null,
+        reviewerId: null,
+        reviewedAt: null,
         lastSavedAt: new Date(),
         version: { increment: 1 }
       }
@@ -202,8 +220,8 @@ async function routes(fastify, options) {
         receiverId: request.user.id,
         title: scheduledAtDate ? '投稿已定时提交' : '投稿已提交',
         content: scheduledAtDate
-          ? `您的投稿《${submission.title}》已定时提交，将于 ${scheduleTime.toLocaleString('zh-CN')} 进入审核队列。`
-          : `您的投稿《${submission.title}》已提交，等待编辑审核。`,
+          ? `您的投稿《${finalTitle}》已定时提交，将于 ${scheduleTime.toLocaleString('zh-CN')} 进入审核队列。`
+          : `您的投稿《${finalTitle}》已提交，等待编辑审核。`,
         type: 'SYSTEM'
       }
     });

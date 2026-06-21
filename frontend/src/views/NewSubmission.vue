@@ -310,6 +310,9 @@ const handleSubmit = async () => {
   try {
     if (editingId.value) {
       await api.post(`/submissions/${editingId.value}/submit`, {
+        title: form.value.title.trim(),
+        content: form.value.content.trim(),
+        images: imageUrls.value,
         scheduledAt: scheduledAt ? scheduledAt.toISOString() : null
       })
     } else {
