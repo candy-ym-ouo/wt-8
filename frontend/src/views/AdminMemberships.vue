@@ -444,14 +444,31 @@
     </div>
 
     <div v-if="currentTab === 'config'" class="section">
-      <div class="flex justify-between items-center mb">
+      <div class="config-header">
         <h3 class="font-semibold">会员配置</h3>
         <button class="btn btn-primary btn-sm" @click="saveConfig">保存配置</button>
       </div>
       <div v-if="loadingConfig" class="empty-state"><div class="empty-state-icon">⏳</div></div>
-      <div v-else class="card" style="padding: 24px;">
+      <div v-else class="card" style="padding: 24px; margin-bottom: 32px;">
         <div
           v-for="cfg in configs"
+          :key="cfg.key"
+          class="form-group"
+        >
+          <label class="form-label">{{ cfg.key }}</label>
+          <input v-model="cfg.value" type="text" class="form-input">
+          <div v-if="cfg.description" class="text-xs text-muted mt-sm">{{ cfg.description }}</div>
+        </div>
+      </div>
+
+      <div class="config-header">
+        <h3 class="font-semibold">订阅分级配置</h3>
+        <button class="btn btn-primary btn-sm" @click="saveSubscriptionConfig">保存配置</button>
+      </div>
+      <div v-if="loadingSubConfig" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else class="card" style="padding: 24px;">
+        <div
+          v-for="cfg in subscriptionConfigs"
           :key="cfg.key"
           class="form-group"
         >
@@ -851,6 +868,9 @@ const messageForm = ref({ title: '', content: '', planId: null, minLevel: 1 })
 const loadingConfig = ref(false)
 const configs = ref([])
 
+const loadingSubConfig = ref(false)
+const subscriptionConfigs = ref([])
+
 const formatDate = (date) => {
   if (!date) return '-'
   const d = new Date(date)
@@ -876,7 +896,10 @@ const loadTabData = () => {
   if (currentTab.value === 'members') loadMembers()
   if (currentTab.value === 'substats') loadSubStats()
   if (currentTab.value === 'activities') loadActivities()
-  if (currentTab.value === 'config') loadConfig()
+  if (currentTab.value === 'config') {
+    loadConfig()
+    loadSubscriptionConfig()
+  }
 }
 
 const loadOverview = async () => {
@@ -954,6 +977,27 @@ const loadConfig = async () => {
   }
 }
 
+const loadSubscriptionConfig = async () => {
+  loadingSubConfig.value = true
+  try {
+    const res = await api.get('/admin/subscriptions/subscription-config')
+    subscriptionConfigs.value = res.configs
+  } catch (e) {
+    showToast(e.error || '加载失败', 'error')
+  } finally {
+    loadingSubConfig.value = false
+  }
+}
+
+const saveSubscriptionConfig = async () => {
+  try {
+    await api.put('/admin/subscriptions/subscription-config', { configs: subscriptionConfigs.value })
+    showToast('订阅配置已保存')
+  } catch (e) {
+    showToast(e.error || '保存失败', 'error')
+  }
+}
+
 const openPlanForm = (plan = null) => {
   editingPlan.value = plan
   if (plan) {
@@ -995,7 +1039,7 @@ const submitPlanForm = async () => {
 const deletePlan = async (plan) => {
   if (!confirm(`确定删除方案「${plan.name}」吗？`)) return
   try {
-    await api.del(`/admin/memberships/plans/${plan.id}`)
+    await api.delete(`/admin/memberships/plans/${plan.id}`)
     showToast('删除成功')
     await loadPlans()
   } catch (e) {
@@ -1039,7 +1083,7 @@ const submitExclusiveForm = async () => {
 const deleteExclusive = async (zine) => {
   if (!confirm(`确定删除「${zine.title}」吗？`)) return
   try {
-    await api.del(`/admin/memberships/exclusive-zines/${zine.id}`)
+    await api.delete(`/admin/memberships/exclusive-zines/${zine.id}`)
     showToast('删除成功')
     await loadExclusive()
   } catch (e) {
@@ -1089,7 +1133,7 @@ const submitEarlyForm = async () => {
 const deleteEarly = async (item) => {
   if (!confirm(`确定删除「${item.title}」吗？`)) return
   try {
-    await api.del(`/admin/memberships/early-access/${item.id}`)
+    await api.delete(`/admin/memberships/early-access/${item.id}`)
     showToast('删除成功')
     await loadEarly()
   } catch (e) {
@@ -1228,7 +1272,7 @@ const submitActivityForm = async () => {
 const deleteActivity = async (activity) => {
   if (!confirm(`确定删除动态「${activity.title}」吗？`)) return
   try {
-    await api.del(`/admin/subscriptions/activities/${activity.id}`)
+    await api.delete(`/admin/subscriptions/activities/${activity.id}`)
     showToast('删除成功')
     await loadActivities()
   } catch (e) {
@@ -1240,6 +1284,12 @@ onMounted(() => loadTabData())
 </script>
 
 <style scoped>
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

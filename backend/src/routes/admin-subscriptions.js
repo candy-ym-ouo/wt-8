@@ -247,6 +247,26 @@ async function routes(fastify, options) {
   });
 
   fastify.get('/subscription-config', { preHandler: [fastify.adminOnly] }, async () => {
+    const defaultConfigs = [
+      { key: 'subscription_free_enabled', value: 'true', description: '是否启用免费订阅' },
+      { key: 'subscription_standard_enabled', value: 'true', description: '是否启用标准订阅' },
+      { key: 'subscription_premium_enabled', value: 'true', description: '是否启用高级订阅' },
+      { key: 'subscription_default_tier', value: 'FREE', description: '默认订阅等级（FREE/STANDARD/PREMIUM）' },
+      { key: 'subscription_series_notify_default', value: 'true', description: '系列更新提醒默认是否开启' },
+      { key: 'subscription_author_notify_default', value: 'false', description: '作者动态提醒默认是否开启' },
+      { key: 'subscription_free_max_zines', value: '10', description: '免费订阅最大刊物数' },
+      { key: 'subscription_standard_max_zines', value: '50', description: '标准订阅最大刊物数' },
+      { key: 'subscription_premium_max_zines', value: '-1', description: '高级订阅最大刊物数（-1为不限制）' },
+      { key: 'subscription_author_activity_daily_limit', value: '5', description: '作者每日动态发布上限' }
+    ];
+
+    for (const cfg of defaultConfigs) {
+      const existing = await prisma.membershipConfig.findUnique({ where: { key: cfg.key } });
+      if (!existing) {
+        await prisma.membershipConfig.create({ data: cfg });
+      }
+    }
+
     const configs = await prisma.membershipConfig.findMany({
       where: { key: { startsWith: 'subscription_' } },
       orderBy: { key: 'asc' }
