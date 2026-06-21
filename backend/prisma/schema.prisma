@@ -92,6 +92,9 @@ model User {
   authoredLicenses CopyrightLicense[] @relation("LicenseAuthor")
   reviewedLicenses CopyrightLicense[] @relation("LicenseReviewer")
   licenseOperationLogs CopyrightLicenseLog[] @relation("LicenseLogOperator")
+
+  assetDownloads AssetDownload[]
+  createdAssets  AssetResource[]
 }
 
 model ReadingBook {
@@ -1639,5 +1642,74 @@ model CopyrightLicenseLog {
   @@index([licenseId])
   @@index([operatorId])
   @@index([action])
+  @@index([createdAt])
+}
+
+model AssetCategory {
+  id          Int       @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  icon        String?
+  description String?
+  type        String    @default("GENERAL")
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  resources   AssetResource[]
+
+  @@index([type])
+  @@index([sortOrder])
+}
+
+model AssetResource {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  coverImage    String?
+  fileUrl       String
+  fileName      String    @default("")
+  fileSize      Int       @default(0)
+  fileType      String    @default("IMAGE")
+  categoryId    Int
+  category      AssetCategory @relation(fields: [categoryId], references: [id])
+  tags          String    @default("[]")
+  type          String    @default("COVER_TEMPLATE")
+  minLevel      Int       @default(0)
+  requirePlan   Boolean   @default(false)
+  isFree        Boolean   @default(true)
+  status        String    @default("PUBLISHED")
+  viewCount     Int       @default(0)
+  downloadCount Int       @default(0)
+  isFeatured    Boolean   @default(false)
+  sortOrder     Int       @default(0)
+  creatorId     Int
+  creator       User      @relation(fields: [creatorId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  downloads     AssetDownload[]
+
+  @@index([categoryId])
+  @@index([type])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([sortOrder])
+  @@index([createdAt])
+}
+
+model AssetDownload {
+  id         Int       @id @default(autoincrement())
+  resourceId Int
+  resource   AssetResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id])
+  status     String    @default("SUCCESS")
+  failReason String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([resourceId, userId])
+  @@index([userId])
   @@index([createdAt])
 }
