@@ -56,6 +56,9 @@
               <router-link to="/growth" class="menu-item">
                 <span>📈</span> 成长中心
               </router-link>
+              <router-link to="/creator-revenue" class="menu-item">
+                <span>💰</span> 创作收益
+              </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
                 <span>⚙️</span> 后台管理
               </router-link>
@@ -94,6 +97,9 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/asset-library" class="menu-item">
                 <span>🗂️</span> 素材资源库管理
+              </router-link>
+              <router-link v-if="authStore.isAdmin" to="/admin/finance" class="menu-item">
+                <span>💳</span> 财务管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">

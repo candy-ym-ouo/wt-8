@@ -95,6 +95,12 @@ model User {
 
   assetDownloads AssetDownload[]
   createdAssets  AssetResource[]
+
+  creatorWallet    CreatorWallet?
+  revenueRecords RevenueRecord[]
+  withdrawalRequests WithdrawalRequest[]
+  reviewedWithdrawals WithdrawalRequest[] @relation("WithdrawalReviewer")
+  withdrawalAuditLogs WithdrawalAuditLog[]
 }
 
 model ReadingBook {
@@ -1711,5 +1717,125 @@ model AssetDownload {
 
   @@unique([resourceId, userId])
   @@index([userId])
+  @@index([createdAt])
+}
+
+model CreatorWallet {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  user            User     @relation(fields: [userId], references: [id])
+  balance         Float    @default(0)
+  frozenAmount    Float    @default(0)
+  totalRevenue    Float    @default(0)
+  totalWithdrawn  Float    @default(0)
+  pendingWithdraw Float    @default(0)
+  bankName        String?
+  bankAccount     String?
+  bankAccountName String?
+  alipayAccount   String?
+  wechatAccount   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model RevenueRecord {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  type        String
+  sourceType  String
+  sourceId    Int?
+  sourceTitle String?
+  amount      Float
+  description String?
+  status      String   @default("SETTLED")
+  ruleId      Int?
+  rule        RevenueRule? @relation(fields: [ruleId], references: [id])
+  orderNo     String?
+  settleDate  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@index([sourceType, sourceId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([settleDate])
+}
+
+model RevenueRule {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  description String?
+  type        String
+  rate        Float    @default(0)
+  baseAmount  Float    @default(0)
+  minAmount   Float    @default(0)
+  maxAmount   Float?
+  level       Int      @default(1)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  revenues    RevenueRecord[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model WithdrawalRequest {
+  id               Int      @id @default(autoincrement())
+  withdrawNo       String   @unique
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id])
+  amount           Float
+  fee              Float    @default(0)
+  actualAmount     Float
+  withdrawMethod   String
+  bankName         String?
+  bankAccount      String?
+  bankAccountName  String?
+  alipayAccount    String?
+  wechatAccount    String?
+  status           String   @default("PENDING")
+  rejectionReason  String?
+  reviewerId       Int?
+  reviewer         User?    @relation("WithdrawalReviewer", fields: [reviewerId], references: [id])
+  reviewedAt       DateTime?
+  paidAt           DateTime?
+  transactionNo    String?
+  remark           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  auditLogs        WithdrawalAuditLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([reviewedAt])
+}
+
+model WithdrawalAuditLog {
+  id           Int                @id @default(autoincrement())
+  withdrawalId Int
+  withdrawal   WithdrawalRequest  @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  action       String
+  fromStatus   String?
+  toStatus     String?
+  remark       String?
+  operatorId   Int
+  operator     User               @relation(fields: [operatorId], references: [id])
+  createdAt    DateTime           @default(now())
+
+  @@index([withdrawalId])
+  @@index([operatorId])
+  @@index([action])
   @@index([createdAt])
 }

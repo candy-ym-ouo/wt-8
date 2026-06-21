@@ -54,6 +54,9 @@ const copyrightLicenseRoutes = require('./routes/copyright-licenses');
 const adminCopyrightLicenseRoutes = require('./routes/admin-copyright-licenses');
 const assetLibraryRoutes = require('./routes/asset-library');
 const adminAssetLibraryRoutes = require('./routes/admin-asset-library');
+const revenueRoutes = require('./routes/revenue');
+const withdrawalRoutes = require('./routes/withdrawals');
+const adminFinanceRoutes = require('./routes/admin-finance');
 
 fastify.register(cors, {
   origin: true,
@@ -135,6 +138,9 @@ fastify.register(copyrightLicenseRoutes, { prefix: '/api/copyright-licenses' });
 fastify.register(adminCopyrightLicenseRoutes, { prefix: '/api/admin/copyright-licenses' });
 fastify.register(assetLibraryRoutes, { prefix: '/api/asset-library' });
 fastify.register(adminAssetLibraryRoutes, { prefix: '/api/admin/asset-library' });
+fastify.register(revenueRoutes, { prefix: '/api/revenue' });
+fastify.register(withdrawalRoutes, { prefix: '/api/withdrawals' });
+fastify.register(adminFinanceRoutes, { prefix: '/api/admin/finance' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };

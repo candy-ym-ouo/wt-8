@@ -76,6 +76,8 @@ const routes = [
   { path: '/admin/copyright-licenses', name: 'AdminCopyrightLicenses', component: () => import('@/views/AdminCopyrightLicenses.vue'), meta: { requiresAdmin: true } },
   { path: '/asset-library', name: 'AssetLibrary', component: () => import('@/views/AssetLibrary.vue') },
   { path: '/admin/asset-library', name: 'AdminAssetLibrary', component: () => import('@/views/AdminAssetLibrary.vue'), meta: { requiresAdmin: true } },
+  { path: '/creator-revenue', name: 'CreatorRevenue', component: () => import('@/views/CreatorRevenue.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/finance', name: 'AdminFinance', component: () => import('@/views/AdminFinance.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

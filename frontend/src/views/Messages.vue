@@ -192,6 +192,7 @@ const typeTabs = [
   { label: '举报通知', value: 'REPORT' },
   { label: '合作消息', value: 'COLLABORATION' },
   { label: '活动消息', value: 'EVENT' },
+  { label: '财务通知', value: 'FINANCE' },
   { label: '用户私信', value: 'USER' }
 ]
 
@@ -312,6 +313,7 @@ const getTypeLabel = (type) => {
     REPORT: '举报通知',
     COLLABORATION: '合作消息',
     EVENT: '活动消息',
+    FINANCE: '财务通知',
     USER: '用户消息'
   }
   return map[type] || type
