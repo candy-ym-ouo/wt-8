@@ -18,6 +18,7 @@ const routes = [
   { path: '/subscriptions', name: 'Subscriptions', component: () => import('@/views/Subscriptions.vue'), meta: { requiresAuth: true } },
   { path: '/messages', name: 'Messages', component: () => import('@/views/Messages.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'Profile', component: () => import('@/views/Profile.vue'), meta: { requiresAuth: true } },
+  { path: '/creator-portfolio', name: 'CreatorPortfolio', component: () => import('@/views/CreatorPortfolio.vue'), meta: { requiresAuth: true } },
   { path: '/growth', name: 'Growth', component: () => import('@/views/Growth.vue'), meta: { requiresAuth: true } },
   { path: '/badges', name: 'Badges', component: () => import('@/views/Badges.vue'), meta: { requiresAuth: true } },
   { path: '/achievements', name: 'Achievements', component: () => import('@/views/Achievements.vue'), meta: { requiresAuth: true } },

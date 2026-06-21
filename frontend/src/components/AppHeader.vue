@@ -55,6 +55,9 @@
               <router-link to="/growth" class="menu-item">
                 <span>📈</span> 成长中心
               </router-link>
+              <router-link to="/creator-portfolio" class="menu-item">
+                <span>📊</span> 创作档案
+              </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
                 <span>⚙️</span> 后台管理
               </router-link>

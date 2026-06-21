@@ -54,6 +54,12 @@
             <span class="quick-label">作者动态</span>
           </router-link>
         </div>
+
+        <div class="profile-actions mt">
+          <router-link to="/creator-portfolio" class="btn btn-primary btn-block">
+            📊 查看创作档案
+          </router-link>
+        </div>
       </div>
 
       <div class="edit-card card">
@@ -245,6 +251,11 @@ const goToTab = (tab) => {
   padding-top: 16px;
   border-top: 1px solid var(--border-light);
   margin-top: 8px;
+}
+.mt { margin-top: 16px; }
+.btn-block {
+  width: 100%;
+  justify-content: center;
 }
 @media (max-width: 800px) {
   .profile-layout { grid-template-columns: 1fr; }

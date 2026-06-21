@@ -53,6 +53,7 @@ const competitionRoutes = require('./routes/competitions');
 const adminCompetitionRoutes = require('./routes/admin-competitions');
 const zineCommentRoutes = require('./routes/zine-comments');
 const adminZineCommentRoutes = require('./routes/admin-zine-comments');
+const creatorPortfolioRoutes = require('./routes/creator-portfolio');
 
 fastify.register(cors, {
   origin: true,
@@ -133,6 +134,7 @@ fastify.register(readingReviewRoutes, { prefix: '/api/reading-reviews' });
 fastify.register(adminReadingRoutes, { prefix: '/api/admin/reading' });
 fastify.register(competitionRoutes, { prefix: '/api/competitions' });
 fastify.register(adminCompetitionRoutes, { prefix: '/api/admin/competitions' });
+fastify.register(creatorPortfolioRoutes, { prefix: '/api/creator-portfolio' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };
