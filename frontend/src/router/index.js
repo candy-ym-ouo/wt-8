@@ -14,6 +14,7 @@ const routes = [
   { path: '/topic-submissions', name: 'TopicSubmissions', component: () => import('@/views/TopicSubmissions.vue'), meta: { requiresAuth: true } },
   { path: '/submissions', name: 'Submissions', component: () => import('@/views/Submissions.vue'), meta: { requiresAuth: true } },
   { path: '/submissions/new', name: 'NewSubmission', component: () => import('@/views/NewSubmission.vue'), meta: { requiresAuth: true } },
+  { path: '/submissions/:id/edit', name: 'EditSubmission', component: () => import('@/views/NewSubmission.vue'), meta: { requiresAuth: true } },
   { path: '/subscriptions', name: 'Subscriptions', component: () => import('@/views/Subscriptions.vue'), meta: { requiresAuth: true } },
   { path: '/messages', name: 'Messages', component: () => import('@/views/Messages.vue'), meta: { requiresAuth: true } },
   { path: '/profile', name: 'Profile', component: () => import('@/views/Profile.vue'), meta: { requiresAuth: true } },

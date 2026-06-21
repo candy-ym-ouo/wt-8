@@ -360,15 +360,24 @@ model Submission {
   title       String
   content     String
   images      String
-  status      String   @default("PENDING")
+  status      String   @default("DRAFT")
   rejectionReason String?
   reviewerId  Int?
   reviewedAt  DateTime?
+  scheduledAt DateTime?
+  withdrawnAt DateTime?
+  lastSavedAt DateTime?
+  version     Int      @default(1)
+  autoSaveEnabled Boolean @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   review Review?
   proofreadingTasks ProofreadingTask[]
+
+  @@index([userId, status])
+  @@index([status])
+  @@index([scheduledAt])
 }
 
 model Subscription {

@@ -100,8 +100,14 @@
           <div v-if="sub.images && sub.images.length" class="sub-images-preview">
             <img v-for="(img, i) in sub.images.slice(0, 6)" :key="i" :src="img" alt="">
           </div>
-          <div v-if="sub.rejectionReason" class="reject-notice">
+          <div v-if="sub.status === 'SCHEDULED' && sub.scheduledAt" class="schedule-notice">
+            ⏰ 定时提交时间：{{ formatDateTime(sub.scheduledAt) }}
+          </div>
+          <div v-if="sub.status === 'REJECTED' && sub.rejectionReason" class="reject-notice">
             驳回原因：{{ sub.rejectionReason }}
+          </div>
+          <div v-if="sub.status === 'WITHDRAWN'" class="withdraw-notice">
+            ↩️ 用户已撤回
           </div>
           <div v-if="sub.status === 'PENDING'" class="sub-admin-actions">
             <button
@@ -1193,8 +1199,11 @@ const tabs = [
 const subFilters = [
   { label: '全部', value: 'all' },
   { label: '待审核', value: 'PENDING' },
+  { label: '定时中', value: 'SCHEDULED' },
+  { label: '草稿', value: 'DRAFT' },
   { label: '已通过', value: 'APPROVED' },
-  { label: '已驳回', value: 'REJECTED' }
+  { label: '已驳回', value: 'REJECTED' },
+  { label: '已撤回', value: 'WITHDRAWN' }
 ]
 
 const topicSubFilters = [
@@ -1283,26 +1292,42 @@ const statList = computed(() => [
   { label: '用户总数', value: stats.value.totalUsers || 0, icon: '👥', color: '#3b82f6' },
   { label: '刊物总数', value: stats.value.totalZines || 0, icon: '📚', color: '#8b5cf6' },
   { label: '投稿总数', value: stats.value.totalSubmissions || 0, icon: '📝', color: '#f59e0b' },
+  { label: '草稿', value: stats.value.draftSubmissions || 0, icon: '📝', color: '#6b7280' },
   { label: '待审核', value: stats.value.pendingSubmissions || 0, icon: '⏳', color: '#ef4444' },
+  { label: '定时中', value: stats.value.scheduledSubmissions || 0, icon: '⏰', color: '#f59e0b' },
+  { label: '已通过', value: stats.value.approvedSubmissions || 0, icon: '✅', color: '#10b981' },
+  { label: '已驳回', value: stats.value.rejectedSubmissions || 0, icon: '❌', color: '#ef4444' },
   { label: '订阅总数', value: stats.value.totalSubscriptions || 0, icon: '⭐', color: '#10b981' }
 ])
 
 const statusClass = (s) => ({
+  DRAFT: 'badge-draft',
   PENDING: 'badge-pending',
+  SCHEDULED: 'badge-scheduled',
   APPROVED: 'badge-approved',
-  REJECTED: 'badge-rejected'
+  REJECTED: 'badge-rejected',
+  WITHDRAWN: 'badge-withdrawn'
 }[s] || '')
 
 const statusLabel = (s) => ({
+  DRAFT: '草稿',
   PENDING: '待审核',
+  SCHEDULED: '定时中',
   APPROVED: '已通过',
-  REJECTED: '已驳回'
+  REJECTED: '已驳回',
+  WITHDRAWN: '已撤回'
 }[s] || s)
 
 const formatDate = (date) => {
   if (!date) return '-'
   const d = new Date(date)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const formatDateTime = (date) => {
+  if (!date) return '-'
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const switchTab = (tab) => {
@@ -2125,6 +2150,34 @@ onMounted(() => loadOverview())
   border-radius: var(--radius-sm);
   font-size: 13px;
   margin-bottom: 14px;
+}
+.schedule-notice {
+  padding: 10px 14px;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.withdraw-notice {
+  padding: 10px 14px;
+  background: #d1ecf1;
+  color: #0c5460;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.badge-draft {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.badge-scheduled {
+  background: #fff3cd;
+  color: #856404;
+}
+.badge-withdrawn {
+  background: #d1ecf1;
+  color: #0c5460;
 }
 .sub-admin-actions {
   display: flex;

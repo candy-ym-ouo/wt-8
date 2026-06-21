@@ -5,7 +5,9 @@
         <h1 class="page-title">我的投稿</h1>
         <p class="page-subtitle">查看投稿状态和编辑内容</p>
       </div>
-      <router-link to="/submissions/new" class="btn btn-primary">+ 新建投稿</router-link>
+      <div class="flex gap-sm">
+        <router-link to="/submissions/new" class="btn btn-primary">+ 新建投稿</router-link>
+      </div>
     </div>
 
     <div class="tabs mb-lg">
@@ -15,7 +17,8 @@
         :class="['tab', { active: currentStatus === tab.value }]"
         @click="setStatus(tab.value)"
       >
-        {{ tab.label }} <span class="count">{{ counts[tab.value] !== undefined ? counts[tab.value] : '' }}</span>
+        {{ tab.label }}
+        <span v-if="counts[tab.value] !== undefined" class="count">{{ counts[tab.value] }}</span>
       </button>
     </div>
 
@@ -24,11 +27,13 @@
       <div class="empty-state-text">加载中...</div>
     </div>
     <div v-else-if="submissions.length === 0" class="empty-state">
-      <div class="empty-state-icon">✍️</div>
+      <div class="empty-state-icon">{{ emptyIcon }}</div>
       <div class="empty-state-text">
-        {{ currentStatus === 'all' ? '还没有投过稿，开始你的第一篇创作吧！' : '暂无此状态的投稿' }}
+        {{ emptyText }}
       </div>
-      <router-link to="/submissions/new" class="btn btn-primary">开始投稿</router-link>
+      <router-link v-if="currentStatus === 'DRAFT' || currentStatus === 'all'" to="/submissions/new" class="btn btn-primary">
+        开始创作
+      </router-link>
     </div>
     <div v-else class="sub-list">
       <div v-for="sub in submissions" :key="sub.id" class="sub-card card">
@@ -48,24 +53,57 @@
             >
             <div v-if="sub.images.length > 4" class="more-images">+{{ sub.images.length - 4 }}</div>
           </div>
+
           <div v-if="sub.status === 'REJECTED' && sub.rejectionReason" class="reject-reason">
             <span class="reason-label">📝 审核意见：</span>
             <span>{{ sub.rejectionReason }}</span>
           </div>
+
+          <div v-if="sub.status === 'SCHEDULED' && sub.scheduledAt" class="schedule-info">
+            <span class="schedule-label">⏰ 定时提交时间：</span>
+            <span>{{ formatDateTime(sub.scheduledAt) }}</span>
+          </div>
+
+          <div v-if="sub.status === 'WITHDRAWN'" class="withdraw-info">
+            <span class="withdraw-label">↩️ 已撤回，可修改后重新提交</span>
+          </div>
+
           <div class="sub-meta">
-            <span>📅 {{ formatDate(sub.createdAt) }}</span>
+            <span>📅 创建于 {{ formatDate(sub.createdAt) }}</span>
+            <span v-if="sub.lastSavedAt">💾 上次保存 {{ formatDate(sub.lastSavedAt) }}</span>
             <span v-if="sub.reviewedAt">🕐 审核时间：{{ formatDate(sub.reviewedAt) }}</span>
+            <span v-if="sub.version">v{{ sub.version }}</span>
           </div>
         </div>
         <div class="sub-actions">
-          <router-link
-            v-if="sub.status === 'PENDING' || sub.status === 'REJECTED'"
-            :to="`/submissions/${sub.id}`"
+          <button
+            v-if="canEdit(sub)"
             class="btn btn-secondary btn-sm"
-            @click.prevent="editSubmission(sub)"
+            @click="editSubmission(sub)"
           >
-            ✏️ 修改并重新提交
-          </router-link>
+            ✏️ 编辑
+          </button>
+          <button
+            v-if="canSubmit(sub)"
+            class="btn btn-primary btn-sm"
+            @click="submitSubmission(sub)"
+          >
+            📤 提交审核
+          </button>
+          <button
+            v-if="canWithdraw(sub)"
+            class="btn btn-outline btn-sm"
+            @click="withdrawSubmission(sub)"
+          >
+            ↩️ 撤回
+          </button>
+          <button
+            v-if="canDelete(sub)"
+            class="btn btn-ghost btn-sm danger-btn"
+            @click="deleteSubmission(sub)"
+          >
+            🗑️ 删除
+          </button>
         </div>
       </div>
     </div>
@@ -76,29 +114,65 @@
       <button class="page-btn" :disabled="page === totalPages" @click="fetchData(page + 1)">→</button>
     </div>
 
-    <div v-if="editing" class="modal-overlay" @click.self="editing = false">
+    <div v-if="showSubmitModal" class="modal-overlay" @click.self="showSubmitModal = false">
       <div class="modal card">
         <div class="modal-header">
-          <h3 class="font-semibold">修改投稿</h3>
-          <button class="btn btn-ghost btn-sm" @click="editing = false">✕</button>
+          <h3 class="font-semibold">提交投稿</h3>
+          <button class="btn btn-ghost btn-sm" @click="showSubmitModal = false">✕</button>
         </div>
         <div class="modal-body">
+          <p class="mb">确定要提交这篇投稿到审核队列吗？</p>
           <div class="form-group">
-            <label class="form-label">标题</label>
-            <input v-model="editForm.title" class="form-input" required>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="submitWithSchedule">
+              <span>定时提交</span>
+            </label>
           </div>
-          <div class="form-group">
-            <label class="form-label">内容</label>
-            <textarea v-model="editForm.content" class="form-textarea" rows="10" required></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">图片链接（每行一个，可选）</label>
-            <textarea v-model="imagesText" class="form-textarea" rows="3" placeholder="https://..."></textarea>
+          <div v-if="submitWithSchedule" class="schedule-inputs">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label class="form-label">提交日期</label>
+                <input
+                  v-model="scheduleDate"
+                  type="date"
+                  class="form-input"
+                  :min="minDate"
+                >
+              </div>
+              <div class="form-group">
+                <label class="form-label">提交时间</label>
+                <input
+                  v-model="scheduleTime"
+                  type="time"
+                  class="form-input"
+                >
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="editing = false">取消</button>
-          <button class="btn btn-primary" @click="submitEdit">提交修改</button>
+          <button class="btn btn-secondary" @click="showSubmitModal = false">取消</button>
+          <button class="btn btn-primary" @click="confirmSubmit" :disabled="submitting">
+            {{ submitting ? '提交中...' : '确认提交' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
+      <div class="modal card" style="max-width: 400px;">
+        <div class="modal-header">
+          <h3 class="font-semibold">确认删除</h3>
+          <button class="btn btn-ghost btn-sm" @click="showDeleteConfirm = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p>确定要删除这篇投稿吗？删除后无法恢复。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showDeleteConfirm = false">取消</button>
+          <button class="btn btn-danger" @click="confirmDelete" :disabled="deleting">
+            {{ deleting ? '删除中...' : '确认删除' }}
+          </button>
         </div>
       </div>
     </div>
@@ -107,15 +181,20 @@
 
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 
+const router = useRouter()
 const showToast = inject('showToast')
 
 const tabs = [
   { label: '全部', value: 'all' },
+  { label: '草稿箱', value: 'DRAFT' },
   { label: '待审核', value: 'PENDING' },
+  { label: '定时中', value: 'SCHEDULED' },
   { label: '已通过', value: 'APPROVED' },
-  { label: '已驳回', value: 'REJECTED' }
+  { label: '已驳回', value: 'REJECTED' },
+  { label: '已撤回', value: 'WITHDRAWN' }
 ]
 
 const submissions = ref([])
@@ -127,26 +206,89 @@ const total = ref(0)
 const pageSize = 10
 const totalPages = computed(() => Math.ceil(total.value / pageSize))
 
-const editing = ref(false)
-const editForm = ref({ id: null, title: '', content: '', images: [] })
-const imagesText = ref('')
+const showSubmitModal = ref(false)
+const showDeleteConfirm = ref(false)
+const selectedSubmission = ref(null)
+const submitting = ref(false)
+const deleting = ref(false)
+
+const submitWithSchedule = ref(false)
+const scheduleDate = ref('')
+const scheduleTime = ref('09:00')
+
+const minDate = computed(() => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+})
+
+const emptyIcon = computed(() => {
+  switch (currentStatus.value) {
+    case 'DRAFT': return '📝'
+    case 'PENDING': return '⏳'
+    case 'SCHEDULED': return '⏰'
+    case 'APPROVED': return '✅'
+    case 'REJECTED': return '❌'
+    case 'WITHDRAWN': return '↩️'
+    default: return '✍️'
+  }
+})
+
+const emptyText = computed(() => {
+  switch (currentStatus.value) {
+    case 'DRAFT': return '暂无草稿，开始你的创作吧！'
+    case 'PENDING': return '暂无待审核的投稿'
+    case 'SCHEDULED': return '暂无定时提交的投稿'
+    case 'APPROVED': return '暂无已通过的投稿'
+    case 'REJECTED': return '暂无已驳回的投稿'
+    case 'WITHDRAWN': return '暂无已撤回的投稿'
+    default: return '还没有投过稿，开始你的第一篇创作吧！'
+  }
+})
 
 const statusClass = (s) => ({
+  DRAFT: 'badge-draft',
   PENDING: 'badge-pending',
+  SCHEDULED: 'badge-scheduled',
   APPROVED: 'badge-approved',
-  REJECTED: 'badge-rejected'
+  REJECTED: 'badge-rejected',
+  WITHDRAWN: 'badge-withdrawn'
 }[s] || '')
 
 const statusLabel = (s) => ({
+  DRAFT: '草稿',
   PENDING: '待审核',
+  SCHEDULED: '定时中',
   APPROVED: '已通过',
-  REJECTED: '已驳回'
+  REJECTED: '已驳回',
+  WITHDRAWN: '已撤回'
 }[s] || s)
+
+const canEdit = (sub) => {
+  return ['DRAFT', 'REJECTED', 'WITHDRAWN'].includes(sub.status)
+}
+
+const canSubmit = (sub) => {
+  return ['DRAFT', 'REJECTED', 'WITHDRAWN'].includes(sub.status)
+}
+
+const canWithdraw = (sub) => {
+  return ['PENDING', 'SCHEDULED'].includes(sub.status)
+}
+
+const canDelete = (sub) => {
+  return sub.status !== 'APPROVED'
+}
 
 const formatDate = (date) => {
   if (!date) return ''
   const d = new Date(date)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const formatDateTime = (date) => {
+  if (!date) return ''
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 const setStatus = (s) => {
@@ -173,39 +315,90 @@ const fetchData = async (newPage = 1) => {
 
 const fetchCounts = async () => {
   try {
-    const statuses = ['PENDING', 'APPROVED', 'REJECTED']
-    const results = await Promise.all(
-      statuses.map(s => api.get(`/submissions?status=${s}&limit=1`).catch(() => ({ total: 0 })))
-    )
-    const all = results.reduce((sum, r) => sum + (r.total || 0), 0)
+    const res = await api.get('/submissions/stats')
     counts.value = {
-      all,
-      PENDING: results[0]?.total || 0,
-      APPROVED: results[1]?.total || 0,
-      REJECTED: results[2]?.total || 0
+      all: Object.values(res.counts).reduce((sum, c) => sum + c, 0),
+      ...res.counts
     }
   } catch (e) {}
 }
 
 const editSubmission = (sub) => {
-  editing.value = true
-  editForm.value = { id: sub.id, title: sub.title, content: sub.content, images: [...sub.images] }
-  imagesText.value = sub.images?.join('\n') || ''
+  router.push(`/submissions/${sub.id}/edit`)
 }
 
-const submitEdit = async () => {
-  const images = imagesText.value.split('\n').map(s => s.trim()).filter(Boolean)
+const submitSubmission = (sub) => {
+  selectedSubmission.value = sub
+  submitWithSchedule.value = false
+  scheduleDate.value = ''
+  scheduleTime.value = '09:00'
+  showSubmitModal.value = true
+}
+
+const confirmSubmit = async () => {
+  if (!selectedSubmission.value) return
+
+  let scheduledAt = null
+  if (submitWithSchedule.value) {
+    if (!scheduleDate.value || !scheduleTime.value) {
+      showToast('请选择定时提交的日期和时间', 'warning')
+      return
+    }
+    scheduledAt = new Date(`${scheduleDate.value}T${scheduleTime.value}`)
+    if (scheduledAt <= new Date()) {
+      showToast('定时提交时间必须晚于当前时间', 'warning')
+      return
+    }
+  }
+
+  submitting.value = true
   try {
-    await api.put(`/submissions/${editForm.value.id}`, {
-      title: editForm.value.title,
-      content: editForm.value.content,
-      images
+    await api.post(`/submissions/${selectedSubmission.value.id}/submit`, {
+      scheduledAt: scheduledAt ? scheduledAt.toISOString() : null
     })
-    showToast('修改成功，已重新提交审核', 'success')
-    editing.value = false
-    fetchData(1)
+    showToast(
+      scheduledAt ? '定时提交成功！' : '提交成功，等待审核',
+      'success'
+    )
+    showSubmitModal.value = false
+    fetchData(page.value)
   } catch (e) {
-    showToast(e.error || '操作失败', 'error')
+    showToast(e.error || '提交失败', 'error')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const withdrawSubmission = async (sub) => {
+  if (!confirm('确定要撤回这篇投稿吗？')) return
+
+  try {
+    await api.post(`/submissions/${sub.id}/withdraw`)
+    showToast('撤回成功', 'success')
+    fetchData(page.value)
+  } catch (e) {
+    showToast(e.error || '撤回失败', 'error')
+  }
+}
+
+const deleteSubmission = (sub) => {
+  selectedSubmission.value = sub
+  showDeleteConfirm.value = true
+}
+
+const confirmDelete = async () => {
+  if (!selectedSubmission.value) return
+
+  deleting.value = true
+  try {
+    await api.delete(`/submissions/${selectedSubmission.value.id}`)
+    showToast('删除成功', 'success')
+    showDeleteConfirm.value = false
+    fetchData(page.value)
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -217,6 +410,7 @@ onMounted(() => fetchData())
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--border-light);
+  overflow-x: auto;
 }
 .tab {
   position: relative;
@@ -224,6 +418,7 @@ onMounted(() => fetchData())
   font-size: 14px;
   color: var(--text-secondary);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 .tab:hover { color: var(--text-primary); }
 .tab.active {
@@ -310,6 +505,27 @@ onMounted(() => fetchData())
   line-height: 1.6;
 }
 .reason-label { font-weight: 600; }
+
+.schedule-info {
+  padding: 10px 14px;
+  background: var(--warning-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.schedule-label { font-weight: 600; }
+
+.withdraw-info {
+  padding: 10px 14px;
+  background: var(--info-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.withdraw-label { font-weight: 500; }
+
 .sub-meta {
   display: flex;
   gap: 24px;
@@ -317,6 +533,7 @@ onMounted(() => fetchData())
   color: var(--text-tertiary);
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
+  flex-wrap: wrap;
 }
 .sub-actions {
   display: flex;
@@ -330,6 +547,20 @@ onMounted(() => fetchData())
   color: var(--text-secondary);
   padding: 0 12px;
 }
+
+.badge-draft {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.badge-scheduled {
+  background: #fff3cd;
+  color: #856404;
+}
+.badge-withdrawn {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -342,7 +573,7 @@ onMounted(() => fetchData())
 }
 .modal {
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -367,4 +598,26 @@ onMounted(() => fetchData())
   padding: 16px 24px;
   border-top: 1px solid var(--border-light);
 }
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.schedule-inputs {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.mb { margin-bottom: 16px; }
 </style>

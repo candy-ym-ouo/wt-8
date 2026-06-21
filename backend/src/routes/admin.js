@@ -19,12 +19,21 @@ async function routes(fastify, options) {
   const formatSub = (s) => s ? { ...s, images: parseJSONField(s.images, []) } : s;
 
   fastify.get('/stats', async () => {
-    const [totalUsers, totalZines, totalSubmissions, pendingSubmissions, totalSubscriptions] = await Promise.all([
+    const [
+      totalUsers, totalZines, totalSubmissions, totalSubscriptions,
+      draftSubmissions, pendingSubmissions, scheduledSubmissions,
+      approvedSubmissions, rejectedSubmissions, withdrawnSubmissions
+    ] = await Promise.all([
       prisma.user.count(),
       prisma.zine.count(),
       prisma.submission.count(),
+      prisma.subscription.count(),
+      prisma.submission.count({ where: { status: 'DRAFT' } }),
       prisma.submission.count({ where: { status: 'PENDING' } }),
-      prisma.subscription.count()
+      prisma.submission.count({ where: { status: 'SCHEDULED' } }),
+      prisma.submission.count({ where: { status: 'APPROVED' } }),
+      prisma.submission.count({ where: { status: 'REJECTED' } }),
+      prisma.submission.count({ where: { status: 'WITHDRAWN' } })
     ]);
 
     const recentSubsData = await prisma.submission.findMany({
@@ -35,7 +44,11 @@ async function routes(fastify, options) {
     const recentSubmissions = recentSubsData.map(formatSub);
 
     return {
-      stats: { totalUsers, totalZines, totalSubmissions, pendingSubmissions, totalSubscriptions },
+      stats: {
+        totalUsers, totalZines, totalSubmissions, totalSubscriptions,
+        draftSubmissions, pendingSubmissions, scheduledSubmissions,
+        approvedSubmissions, rejectedSubmissions, withdrawnSubmissions
+      },
       recentSubmissions
     };
   });
