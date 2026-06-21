@@ -8,102 +8,117 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  avatar    String?
-  bio       String?
-  role      String   @default("USER")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  zines       Zine[]
-  submissions Submission[]
-  messages    Message[]    @relation("UserMessages")
-  messagesReceived Message[] @relation("MessageReceiver")
-  subscriptions Subscription[]
-  createdTopics Topic[]
-  topicSubmissions TopicSubmission[]
-  reviewedTopicSubmissions TopicSubmission[] @relation("TopicSubmissionReviewer")
-  createdSchedules TopicSchedule[]
-  growth      UserGrowth?
-  benefits    UserBenefit[]
-  createdEvents Event[]
-  eventRegistrations EventRegistration[]
-  reviewedEventRegistrations EventRegistration[] @relation("EventRegistrationReviewer")
-  eventCheckIns EventCheckIn[]
-  operatedEventCheckIns EventCheckIn[] @relation("EventCheckInOperator")
-  createdCollections Collection[]
-  createdCollaborations Collaboration[]
-  reviewedCollaborations Collaboration[] @relation("CollaborationReviewer")
-  collaborationApplications CollaborationApplication[]
-  reviewedCollaborationApplications CollaborationApplication[] @relation("CollaborationApplicationReviewer")
-  createdCrowdfundings Crowdfunding[]
-  reviewedCrowdfundings Crowdfunding[] @relation("CrowdfundingReviewer")
-  crowdfundingOrders CrowdfundingOrder[]
-  reports Report[] @relation("UserReports")
-  reportedBy Report[] @relation("ReportReporter")
-  targetReports Report[] @relation("ReportTarget")
-  appeals Appeal[] @relation("AppealAppellant")
-  handledAppeals Appeal[] @relation("AppealHandler")
-  reportLogs ReportLog[]
-  calendarEvents CreationCalendar[]
-  calendarReminders CalendarReminder[]
-  calendarSubscriptions CalendarSubscription[]
-  proofreadingAssigned ProofreadingTask[] @relation("ProofreadingAssignee")
-  proofreadingCreated ProofreadingTask[] @relation("ProofreadingCreator")
-  editorTemplates EditorTemplate[]
-  collaborationNotes CollaborationNote[]
-  workflowRecords WorkflowRecord[]
-  reviewPerformance ReviewPerformance?
-  createdSwapListings SwapListing[]
-  reviewedSwapListings SwapListing[] @relation("SwapListingReviewer")
-  initiatedSwapMatches SwapMatch[] @relation("SwapInitiator")
-  respondedSwapMatches SwapMatch[] @relation("SwapResponder")
-  sentSwapMessages SwapMessage[] @relation("SwapMessageSender")
-  memberships     UserMembership[]
-  benefitCheckLogs BenefitCheckLog[]
-  exclusiveZines  ExclusiveZine[]
-  earlyAccesses   EarlyAccess[]
-  createdInterviews Interview[]
-  reviewedInterviews Interview[] @relation("InterviewReviewer")
-  interviewComments InterviewComment[]
-  interviewSchedules InterviewSchedule[]
-  interviewedAs   Interview[] @relation("InterviewAuthor")
-  createdPrintOrders PrintOrder[]
-  reviewedPrintOrders PrintOrder[] @relation("PrintOrderReviewer")
-  quotedPrintOrders  PrintOrder[] @relation("PrintOrderQuoter")
-
-  readingCheckIns ReadingCheckIn[]
-  readingReviews ReadingReview[]
-  readingReviewLikes ReadingReviewLike[] @relation("ReadingReviewLikeUser")
-  readingReviewComments ReadingReviewComment[] @relation("ReadingReviewCommentUser")
-  readingCheckInLikes ReadingCheckInLike[] @relation("ReadingCheckInLikeUser")
-  readingCheckInComments ReadingCheckInComment[] @relation("ReadingCheckInCommentUser")
-  readingStreaks ReadingStreak[]
-
-  createdCompetitions Competition[] @relation("CompetitionCreator")
-  competitionEntries CompetitionEntry[]
-  judgedCompetitions Competition[] @relation("CompetitionJudge")
-  competitionScores CompetitionScore[]
+  id                                                   Int                        @id @default(autoincrement())
+  username                                             String                     @unique
+  email                                                String                     @unique
+  password                                             String
+  avatar                                               String?
+  bio                                                  String?
+  role                                                 String                     @default("USER")
+  createdAt                                            DateTime                   @default(now())
+  updatedAt                                            DateTime                   @updatedAt
+  appeals                                              Appeal[]                   @relation("AppealAppellant")
+  handledAppeals                                       Appeal[]                   @relation("AppealHandler")
+  AssetDownload                                        AssetDownload[]
+  AssetResource                                        AssetResource[]
+  benefitCheckLogs                                     BenefitCheckLog[]
+  BrandCoop_BrandCoop_creatorIdToUser                  BrandCoop[]                @relation("BrandCoop_creatorIdToUser")
+  BrandCoop_BrandCoop_reviewerIdToUser                 BrandCoop[]                @relation("BrandCoop_reviewerIdToUser")
+  BrandCoopMessage                                     BrandCoopMessage[]
+  calendarReminders                                    CalendarReminder[]
+  calendarSubscriptions                                CalendarSubscription[]
+  createdCollaborations                                Collaboration[]
+  reviewedCollaborations                               Collaboration[]            @relation("CollaborationReviewer")
+  reviewedCollaborationApplications                    CollaborationApplication[] @relation("CollaborationApplicationReviewer")
+  collaborationApplications                            CollaborationApplication[]
+  collaborationNotes                                   CollaborationNote[]
+  createdCollections                                   Collection[]
+  createdCompetitions                                  Competition[]              @relation("CompetitionCreator")
+  judgedCompetitions                                   Competition[]              @relation("CompetitionJudge")
+  competitionEntries                                   CompetitionEntry[]
+  competitionScores                                    CompetitionScore[]
+  CopyrightLicense_CopyrightLicense_reviewerIdToUser   CopyrightLicense[]         @relation("CopyrightLicense_reviewerIdToUser")
+  CopyrightLicense_CopyrightLicense_authorIdToUser     CopyrightLicense[]         @relation("CopyrightLicense_authorIdToUser")
+  CopyrightLicense_CopyrightLicense_applicantIdToUser  CopyrightLicense[]         @relation("CopyrightLicense_applicantIdToUser")
+  CopyrightLicenseLog                                  CopyrightLicenseLog[]
+  calendarEvents                                       CreationCalendar[]
+  CreatorWallet                                        CreatorWallet?
+  createdCrowdfundings                                 Crowdfunding[]
+  reviewedCrowdfundings                                Crowdfunding[]             @relation("CrowdfundingReviewer")
+  CrowdfundingComment                                  CrowdfundingComment[]
+  CrowdfundingCommentLike                              CrowdfundingCommentLike[]
+  ZineComment                                          ZineComment[]
+  ZineCommentLike                                      ZineCommentLike[]
+  zineCommentReplies                                   ZineComment[]             @relation("ReplyToUser")
+  crowdfundingOrders                                   CrowdfundingOrder[]
+  earlyAccesses                                        EarlyAccess[]
+  editorTemplates                                      EditorTemplate[]
+  createdEvents                                        Event[]
+  operatedEventCheckIns                                EventCheckIn[]             @relation("EventCheckInOperator")
+  eventCheckIns                                        EventCheckIn[]
+  reviewedEventRegistrations                           EventRegistration[]        @relation("EventRegistrationReviewer")
+  eventRegistrations                                   EventRegistration[]
+  exclusiveZines                                       ExclusiveZine[]
+  createdInterviews                                    Interview[]
+  reviewedInterviews                                   Interview[]                @relation("InterviewReviewer")
+  interviewedAs                                        Interview[]                @relation("InterviewAuthor")
+  interviewComments                                    InterviewComment[]
+  interviewSchedules                                   InterviewSchedule[]
+  messagesReceived                                     Message[]                  @relation("MessageReceiver")
+  messages                                             Message[]                  @relation("UserMessages")
+  createdPrintOrders                                   PrintOrder[]
+  reviewedPrintOrders                                  PrintOrder[]               @relation("PrintOrderReviewer")
+  quotedPrintOrders                                    PrintOrder[]               @relation("PrintOrderQuoter")
+  proofreadingCreated                                  ProofreadingTask[]         @relation("ProofreadingCreator")
+  proofreadingAssigned                                 ProofreadingTask[]         @relation("ProofreadingAssignee")
+  readingCheckIns                                      ReadingCheckIn[]
+  readingCheckInComments                               ReadingCheckInComment[]    @relation("ReadingCheckInCommentUser")
+  readingCheckInLikes                                  ReadingCheckInLike[]       @relation("ReadingCheckInLikeUser")
+  readingReviews                                       ReadingReview[]
+  readingReviewComments                                ReadingReviewComment[]     @relation("ReadingReviewCommentUser")
+  readingReviewLikes                                   ReadingReviewLike[]        @relation("ReadingReviewLikeUser")
+  readingStreaks                                       ReadingStreak?
+  targetReports                                        Report[]                   @relation("ReportTarget")
+  reportedBy                                           Report[]                   @relation("ReportReporter")
+  reports                                              Report[]                   @relation("UserReports")
+  reportLogs                                           ReportLog[]
+  RevenueRecord                                        RevenueRecord[]
+  reviewPerformance                                    ReviewPerformance?
+  submissions                                          Submission[]
+  subscriptions                                        Subscription[]
+  createdSwapListings                                  SwapListing[]
+  reviewedSwapListings                                 SwapListing[]              @relation("SwapListingReviewer")
+  respondedSwapMatches                                 SwapMatch[]                @relation("SwapResponder")
+  initiatedSwapMatches                                 SwapMatch[]                @relation("SwapInitiator")
+  sentSwapMessages                                     SwapMessage[]              @relation("SwapMessageSender")
+  createdTopics                                        Topic[]
+  createdSchedules                                     TopicSchedule[]
+  reviewedTopicSubmissions                             TopicSubmission[]          @relation("TopicSubmissionReviewer")
+  topicSubmissions                                     TopicSubmission[]
+  benefits                                             UserBenefit[]
+  growth                                               UserGrowth?
+  memberships                                          UserMembership[]
+  WithdrawalAuditLog                                   WithdrawalAuditLog[]
+  WithdrawalRequest_WithdrawalRequest_reviewerIdToUser WithdrawalRequest[]        @relation("WithdrawalRequest_reviewerIdToUser")
+  WithdrawalRequest_WithdrawalRequest_userIdToUser     WithdrawalRequest[]        @relation("WithdrawalRequest_userIdToUser")
+  workflowRecords                                      WorkflowRecord[]
+  zines                                                Zine[]
 }
 
 model ReadingBook {
-  id          Int      @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   title       String
   author      String
   coverImage  String?
   isbn        String?
   publisher   String?
   publishDate DateTime?
-  category    String   @default("OTHER")
-  tags        String   @default("[]")
+  category    String           @default("OTHER")
+  tags        String           @default("[]")
   description String?
-  pageCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  pageCount   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   checkIns    ReadingCheckIn[]
   reviews     ReadingReview[]
 
@@ -112,26 +127,25 @@ model ReadingBook {
 }
 
 model ReadingCheckIn {
-  id            Int       @id @default(autoincrement())
-  userId        Int
-  user          User      @relation(fields: [userId], references: [id])
-  bookId        Int?
-  book          ReadingBook? @relation(fields: [bookId], references: [id])
-  bookTitle     String
-  bookAuthor    String?
-  pagesRead     Int       @default(0)
-  minutesRead   Int       @default(0)
-  mood          String    @default("HAPPY")
-  note          String?
-  checkInDate   DateTime  @default(now())
-  isPublic      Boolean   @default(true)
-  likeCount     Int       @default(0)
-  commentCount  Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  likes         ReadingCheckInLike[]
-  comments      ReadingCheckInComment[]
+  id           Int                     @id @default(autoincrement())
+  userId       Int
+  bookId       Int?
+  bookTitle    String
+  bookAuthor   String?
+  pagesRead    Int                     @default(0)
+  minutesRead  Int                     @default(0)
+  mood         String                  @default("HAPPY")
+  note         String?
+  checkInDate  DateTime                @default(now())
+  isPublic     Boolean                 @default(true)
+  likeCount    Int                     @default(0)
+  commentCount Int                     @default(0)
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  book         ReadingBook?            @relation(fields: [bookId], references: [id])
+  user         User                    @relation(fields: [userId], references: [id])
+  comments     ReadingCheckInComment[]
+  likes        ReadingCheckInLike[]
 
   @@unique([userId, checkInDate])
   @@index([userId])
@@ -140,62 +154,61 @@ model ReadingCheckIn {
 }
 
 model ReadingCheckInLike {
-  id          Int       @id @default(autoincrement())
-  checkInId   Int
-  checkIn     ReadingCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
-  userId      Int
-  user        User @relation("ReadingCheckInLikeUser", fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
+  id        Int            @id @default(autoincrement())
+  checkInId Int
+  userId    Int
+  createdAt DateTime       @default(now())
+  user      User           @relation("ReadingCheckInLikeUser", fields: [userId], references: [id])
+  checkIn   ReadingCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
 
   @@unique([checkInId, userId])
   @@index([userId])
 }
 
 model ReadingCheckInComment {
-  id          Int       @id @default(autoincrement())
-  checkInId   Int
-  checkIn     ReadingCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
-  userId      Int
-  user        User      @relation("ReadingCheckInCommentUser", fields: [userId], references: [id])
-  content     String
-  status      String    @default("APPROVED")
-  isPinned    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int            @id @default(autoincrement())
+  checkInId Int
+  userId    Int
+  content   String
+  status    String         @default("APPROVED")
+  isPinned  Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation("ReadingCheckInCommentUser", fields: [userId], references: [id])
+  checkIn   ReadingCheckIn @relation(fields: [checkInId], references: [id], onDelete: Cascade)
 
   @@index([checkInId])
   @@index([status])
 }
 
 model ReadingReview {
-  id            Int       @id @default(autoincrement())
-  userId        Int
-  user          User      @relation(fields: [userId], references: [id])
-  bookId        Int?
-  book          ReadingBook? @relation(fields: [bookId], references: [id])
-  bookTitle     String
-  bookAuthor    String?
-  coverImage    String?
-  title         String
-  content       String
-  rating        Int       @default(5)
-  category      String    @default("OTHER")
-  tags          String    @default("[]")
-  status        String    @default("PUBLISHED")
+  id              Int                    @id @default(autoincrement())
+  userId          Int
+  bookId          Int?
+  bookTitle       String
+  bookAuthor      String?
+  coverImage      String?
+  title           String
+  content         String
+  rating          Int                    @default(5)
+  category        String                 @default("OTHER")
+  tags            String                 @default("[]")
+  status          String                 @default("PUBLISHED")
   rejectionReason String?
-  reviewerId    Int?
-  reviewedAt    DateTime?
-  isFeatured    Boolean   @default(false)
-  sortOrder     Int       @default(0)
-  viewCount     Int       @default(0)
-  likeCount     Int       @default(0)
-  commentCount  Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  likes         ReadingReviewLike[]
-  comments      ReadingReviewComment[]
-  featured      FeaturedReadingReview?
+  reviewerId      Int?
+  reviewedAt      DateTime?
+  isFeatured      Boolean                @default(false)
+  sortOrder       Int                    @default(0)
+  viewCount       Int                    @default(0)
+  likeCount       Int                    @default(0)
+  commentCount    Int                    @default(0)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  featured        FeaturedReadingReview?
+  book            ReadingBook?           @relation(fields: [bookId], references: [id])
+  user            User                   @relation(fields: [userId], references: [id])
+  comments        ReadingReviewComment[]
+  likes           ReadingReviewLike[]
 
   @@index([userId])
   @@index([status])
@@ -204,95 +217,92 @@ model ReadingReview {
 }
 
 model ReadingReviewLike {
-  id          Int       @id @default(autoincrement())
-  reviewId    Int
-  review      ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  userId      Int
-  user        User @relation("ReadingReviewLikeUser", fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
+  id        Int           @id @default(autoincrement())
+  reviewId  Int
+  userId    Int
+  createdAt DateTime      @default(now())
+  user      User          @relation("ReadingReviewLikeUser", fields: [userId], references: [id])
+  review    ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   @@unique([reviewId, userId])
   @@index([userId])
 }
 
 model ReadingReviewComment {
-  id          Int       @id @default(autoincrement())
-  reviewId    Int
-  review      ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  userId      Int
-  user        User      @relation("ReadingReviewCommentUser", fields: [userId], references: [id])
-  content     String
-  status      String    @default("APPROVED")
-  isPinned    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int           @id @default(autoincrement())
+  reviewId  Int
+  userId    Int
+  content   String
+  status    String        @default("APPROVED")
+  isPinned  Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation("ReadingReviewCommentUser", fields: [userId], references: [id])
+  review    ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   @@index([reviewId])
   @@index([status])
 }
 
 model ReadingStreak {
-  id              Int      @id @default(autoincrement())
-  userId          Int      @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currentStreak   Int      @default(0)
-  longestStreak   Int      @default(0)
-  totalCheckIns   Int      @default(0)
-  totalMinutes    Int      @default(0)
-  totalPages      Int      @default(0)
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  totalCheckIns   Int       @default(0)
+  totalMinutes    Int       @default(0)
+  totalPages      Int       @default(0)
   lastCheckInDate DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model FeaturedReadingReview {
-  id              Int       @id @default(autoincrement())
-  reviewId        Int       @unique
-  review          ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  bannerImage     String?
-  bannerTitle     String?
-  bannerSubtitle  String?
-  sortOrder       Int       @default(0)
-  startDate       DateTime?
-  endDate         DateTime?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             Int           @id @default(autoincrement())
+  reviewId       Int           @unique
+  bannerImage    String?
+  bannerTitle    String?
+  bannerSubtitle String?
+  sortOrder      Int           @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  review         ReadingReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
 
 model Collaboration {
-  id              Int                         @id @default(autoincrement())
+  id              Int                        @id @default(autoincrement())
   title           String
   description     String
   coverImage      String?
-  category        String                      @default("OTHER")
-  tags            String                      @default("[]")
+  category        String                     @default("OTHER")
+  tags            String                     @default("[]")
   requirements    String?
   deliverables    String?
   compensation    String?
   deadline        DateTime?
-  status          String                      @default("DRAFT")
+  status          String                     @default("DRAFT")
   rejectionReason String?
   reviewerId      Int?
-  reviewer        User?                       @relation("CollaborationReviewer", fields: [reviewerId], references: [id])
   reviewedAt      DateTime?
-  isFeatured      Boolean                     @default(false)
-  sortOrder       Int                         @default(0)
-  viewCount       Int                         @default(0)
+  isFeatured      Boolean                    @default(false)
+  sortOrder       Int                        @default(0)
+  viewCount       Int                        @default(0)
   creatorId       Int
-  creator         User                        @relation(fields: [creatorId], references: [id])
-  createdAt       DateTime                    @default(now())
-  updatedAt       DateTime                    @updatedAt
-
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  creator         User                       @relation(fields: [creatorId], references: [id])
+  reviewer        User?                      @relation("CollaborationReviewer", fields: [reviewerId], references: [id])
   applications    CollaborationApplication[]
 }
 
 model CollaborationApplication {
   id              Int           @id @default(autoincrement())
   collaborationId Int
-  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
   userId          Int
-  user            User          @relation(fields: [userId], references: [id])
   portfolio       String?
   skills          String?
   motivation      String?
@@ -300,65 +310,116 @@ model CollaborationApplication {
   status          String        @default("PENDING")
   rejectionReason String?
   reviewerId      Int?
-  reviewer        User?         @relation("CollaborationApplicationReviewer", fields: [reviewerId], references: [id])
   reviewedAt      DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  reviewer        User?         @relation("CollaborationApplicationReviewer", fields: [reviewerId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
 
   @@unique([collaborationId, userId])
 }
 
 model Zine {
-  id          Int         @id @default(autoincrement())
-  title       String
-  description String
-  coverImage  String
-  content     String
-  authorId    Int
-  author      User        @relation(fields: [authorId], references: [id])
-  category    String
-  tags        String
-  status      String      @default("PUBLISHED")
-  views       Int         @default(0)
-  likes       Int         @default(0)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                 Int                @id @default(autoincrement())
+  title              String
+  description        String
+  coverImage         String
+  content            String
+  authorId           Int
+  category           String
+  tags               String
+  status             String             @default("PUBLISHED")
+  views              Int                @default(0)
+  likes              Int                @default(0)
+  commentCount       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  BrandCoopZine      BrandCoopZine[]
+  collections        CollectionZine[]
+  earlyAccesses      EarlyAccess[]
+  interviewZines     InterviewZine[]
+  proofreadingTasks  ProofreadingTask[]
+  reviews            Review[]
+  subscriptions      Subscription[]
+  swapListingsAsWant SwapListing[]      @relation("WantZine")
+  swapListingsAsHave SwapListing[]      @relation("HaveZine")
+  author             User               @relation(fields: [authorId], references: [id])
+  comments           ZineComment[]
+}
 
-  subscriptions Subscription[]
-  reviews       Review[]
-  collections   CollectionZine[]
-  proofreadingTasks ProofreadingTask[]
-  swapListingsAsHave SwapListing[] @relation("HaveZine")
-  swapListingsAsWant SwapListing[] @relation("WantZine")
-  earlyAccesses EarlyAccess[]
-  interviewZines InterviewZine[]
+model ZineComment {
+  id              Int              @id @default(autoincrement())
+  zineId          Int
+  userId          Int
+  content         String
+  parentId        Int?
+  replyToUserId   Int?
+  likeCount       Int              @default(0)
+  isPinned        Boolean          @default(false)
+  status          String           @default("APPROVED")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  parent          ZineComment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies         ZineComment[]   @relation("CommentReplies")
+  user            User             @relation(fields: [userId], references: [id])
+  replyToUser     User?            @relation("ReplyToUser", fields: [replyToUserId], references: [id])
+  zine            Zine             @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  likes           ZineCommentLike[]
+
+  @@index([zineId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ZineCommentLike {
+  id        Int         @id @default(autoincrement())
+  commentId Int
+  userId    Int
+  createdAt DateTime    @default(now())
+  comment   ZineComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
 }
 
 model Submission {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  title       String
-  content     String
-  images      String
-  status      String   @default("PENDING")
-  rejectionReason String?
-  reviewerId  Int?
-  reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  review Review?
+  id                Int                @id @default(autoincrement())
+  userId            Int
+  title             String
+  content           String
+  images            String
+  status            String             @default("DRAFT")
+  rejectionReason   String?
+  reviewerId        Int?
+  reviewedAt        DateTime?
+  scheduledAt       DateTime?
+  withdrawnAt       DateTime?
+  lastSavedAt       DateTime?
+  version           Int                @default(1)
+  autoSaveEnabled   Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   proofreadingTasks ProofreadingTask[]
+  review            Review?
+  user              User               @relation(fields: [userId], references: [id])
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([userId, status])
 }
 
 model Subscription {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   zineId    Int
-  zine      Zine     @relation(fields: [zineId], references: [id])
   createdAt DateTime @default(now())
+  zine      Zine     @relation(fields: [zineId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, zineId])
 }
@@ -366,104 +427,102 @@ model Subscription {
 model Message {
   id         Int      @id @default(autoincrement())
   senderId   Int
-  sender     User     @relation("UserMessages", fields: [senderId], references: [id])
   receiverId Int
-  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
   title      String
   content    String
   isRead     Boolean  @default(false)
   type       String   @default("SYSTEM")
   createdAt  DateTime @default(now())
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+  sender     User     @relation("UserMessages", fields: [senderId], references: [id])
 }
 
 model Review {
-  id        Int      @id @default(autoincrement())
-  submissionId Int  @unique
+  id           Int        @id @default(autoincrement())
+  submissionId Int        @unique
+  zineId       Int?
+  status       String
+  feedback     String?
+  createdAt    DateTime   @default(now())
+  zine         Zine?      @relation(fields: [zineId], references: [id])
   submission   Submission @relation(fields: [submissionId], references: [id])
-  zineId    Int?
-  zine      Zine?    @relation(fields: [zineId], references: [id])
-  status    String
-  feedback  String?
-  createdAt DateTime @default(now())
 }
 
 model Topic {
-  id              Int               @id @default(autoincrement())
-  title           String
-  description     String
-  coverImage      String?
-  content         String
-  category        String
-  tags            String            @default("[]")
-  deadline        DateTime?
-  startDate       DateTime?
-  endDate         DateTime?
-  status          String            @default("DRAFT")
-  isFeatured      Boolean           @default(false)
-  sortOrder       Int               @default(0)
-  maxSubmissions  Int               @default(0)
-  requirements    String?
-  prizes          String?
-  creatorId       Int
-  creator         User              @relation(fields: [creatorId], references: [id])
-  reviewers       String            @default("[]")
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-
-  submissions     TopicSubmission[]
-  schedules       TopicSchedule[]
-  featured        FeaturedTopic?
+  id             Int               @id @default(autoincrement())
+  title          String
+  description    String
+  coverImage     String?
+  content        String
+  category       String
+  tags           String            @default("[]")
+  deadline       DateTime?
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String            @default("DRAFT")
+  isFeatured     Boolean           @default(false)
+  sortOrder      Int               @default(0)
+  maxSubmissions Int               @default(0)
+  requirements   String?
+  prizes         String?
+  creatorId      Int
+  reviewers      String            @default("[]")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  featured       FeaturedTopic?
+  creator        User              @relation(fields: [creatorId], references: [id])
+  schedules      TopicSchedule[]
+  submissions    TopicSubmission[]
 }
 
 model TopicSubmission {
-  id          Int      @id @default(autoincrement())
-  topicId     Int
-  topic       Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  title       String
-  content     String
-  images      String   @default("[]")
-  status      String   @default("PENDING")
+  id              Int            @id @default(autoincrement())
+  topicId         Int
+  userId          Int
+  title           String
+  content         String
+  images          String         @default("[]")
+  status          String         @default("PENDING")
   rejectionReason String?
-  reviewerId  Int?
-  reviewer    User?    @relation("TopicSubmissionReviewer", fields: [reviewerId], references: [id])
-  reviewedAt  DateTime?
-  scheduleId  Int?
-  schedule    TopicSchedule? @relation(fields: [scheduleId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  reviewerId      Int?
+  reviewedAt      DateTime?
+  scheduleId      Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  schedule        TopicSchedule? @relation(fields: [scheduleId], references: [id])
+  reviewer        User?          @relation("TopicSubmissionReviewer", fields: [reviewerId], references: [id])
+  user            User           @relation(fields: [userId], references: [id])
+  topic           Topic          @relation(fields: [topicId], references: [id], onDelete: Cascade)
 }
 
 model TopicSchedule {
-  id            Int               @id @default(autoincrement())
-  topicId       Int
-  topic         Topic             @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  title         String
-  description   String?
-  publishDate   DateTime
-  status        String            @default("PENDING")
-  creatorId     Int
-  creator       User              @relation(fields: [creatorId], references: [id])
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  submissions   TopicSubmission[]
+  id          Int               @id @default(autoincrement())
+  topicId     Int
+  title       String
+  description String?
+  publishDate DateTime
+  status      String            @default("PENDING")
+  creatorId   Int
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  creator     User              @relation(fields: [creatorId], references: [id])
+  topic       Topic             @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  submissions TopicSubmission[]
 }
 
 model FeaturedTopic {
-  id         Int      @id @default(autoincrement())
-  topicId    Int      @unique
-  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  bannerImage String?
-  bannerTitle String?
+  id             Int       @id @default(autoincrement())
+  topicId        Int       @unique
+  bannerImage    String?
+  bannerTitle    String?
   bannerSubtitle String?
-  sortOrder  Int      @default(0)
-  startDate  DateTime?
-  endDate    DateTime?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  sortOrder      Int       @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  topic          Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
 }
 
 model Level {
@@ -477,371 +536,362 @@ model Level {
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-
   userGrowths UserGrowth[]
 }
 
 model Badge {
-  id            Int            @id @default(autoincrement())
-  name          String         @unique
-  code          String         @unique
-  icon          String
-  description   String
-  category      String         @default("GENERAL")
-  rarity        String         @default("COMMON")
-  expReward     Int            @default(0)
-  isActive      Boolean        @default(true)
-  sortOrder     Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  userBadges    UserBadge[]
-  achievements  Achievement[]
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  code         String        @unique
+  icon         String
+  description  String
+  category     String        @default("GENERAL")
+  rarity       String        @default("COMMON")
+  expReward    Int           @default(0)
+  isActive     Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  achievements Achievement[]
+  userBadges   UserBadge[]
 }
 
 model Achievement {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  code        String   @unique
-  description String
-  category    String   @default("CREATION")
-  condition   String
-  targetValue Int      @default(1)
-  expReward   Int      @default(0)
-  badgeId     Int?
-  badge       Badge?   @relation(fields: [badgeId], references: [id])
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id               Int               @id @default(autoincrement())
+  name             String            @unique
+  code             String            @unique
+  description      String
+  category         String            @default("CREATION")
+  condition        String
+  targetValue      Int               @default(1)
+  expReward        Int               @default(0)
+  badgeId          Int?
+  isActive         Boolean           @default(true)
+  sortOrder        Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  badge            Badge?            @relation(fields: [badgeId], references: [id])
   userAchievements UserAchievement[]
 }
 
 model Task {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
-  code        String   @unique
+  code        String     @unique
   description String
-  category    String   @default("DAILY")
-  type        String   @default("SUBMISSION")
+  category    String     @default("DAILY")
+  type        String     @default("SUBMISSION")
   condition   String
-  targetValue Int      @default(1)
-  expReward   Int      @default(10)
-  isActive    Boolean  @default(true)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  targetValue Int        @default(1)
+  expReward   Int        @default(10)
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   userTasks   UserTask[]
 }
 
 model Benefit {
-  id          Int           @id @default(autoincrement())
-  name        String
-  code        String        @unique
-  description String
-  type        String        @default("PRIVILEGE")
-  value       String?
-  minLevel    Int           @default(1)
-  sortOrder   Int           @default(0)
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
+  id           Int           @id @default(autoincrement())
+  name         String
+  code         String        @unique
+  description  String
+  type         String        @default("PRIVILEGE")
+  value        String?
+  minLevel     Int           @default(1)
+  sortOrder    Int           @default(0)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   userBenefits UserBenefit[]
 }
 
 model UserGrowth {
-  id          Int      @id @default(autoincrement())
-  userId      Int      @unique
-  user        User     @relation(fields: [userId], references: [id])
-  totalExp    Int      @default(0)
-  currentExp  Int      @default(0)
-  levelId     Int?
-  level       Level?   @relation(fields: [levelId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userBadges      UserBadge[]
+  id               Int               @id @default(autoincrement())
+  userId           Int               @unique
+  totalExp         Int               @default(0)
+  currentExp       Int               @default(0)
+  levelId          Int?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  growthLogs       GrowthLog[]
   userAchievements UserAchievement[]
-  userTasks       UserTask[]
-  growthLogs      GrowthLog[]
+  userBadges       UserBadge[]
+  level            Level?            @relation(fields: [levelId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  userTasks        UserTask[]
 }
 
 model UserBadge {
-  id          Int      @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   userGrowthId Int
-  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
-  badgeId     Int
-  badge       Badge    @relation(fields: [badgeId], references: [id])
-  unlockedAt  DateTime @default(now())
-  source      String?
+  badgeId      Int
+  unlockedAt   DateTime   @default(now())
+  source       String?
+  badge        Badge      @relation(fields: [badgeId], references: [id])
+  userGrowth   UserGrowth @relation(fields: [userGrowthId], references: [id])
 
   @@unique([userGrowthId, badgeId])
 }
 
 model UserAchievement {
-  id          Int      @id @default(autoincrement())
-  userGrowthId Int
-  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
+  id            Int         @id @default(autoincrement())
+  userGrowthId  Int
   achievementId Int
-  achievement Achievement @relation(fields: [achievementId], references: [id])
-  progress    Int      @default(0)
-  isCompleted Boolean  @default(false)
-  completedAt DateTime?
-  claimedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  progress      Int         @default(0)
+  isCompleted   Boolean     @default(false)
+  completedAt   DateTime?
+  claimedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  userGrowth    UserGrowth  @relation(fields: [userGrowthId], references: [id])
 
   @@unique([userGrowthId, achievementId])
 }
 
 model UserTask {
-  id          Int      @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   userGrowthId Int
-  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
-  taskId      Int
-  task        Task     @relation(fields: [taskId], references: [id])
-  progress    Int      @default(0)
-  isCompleted Boolean  @default(false)
-  completedAt DateTime?
-  claimedAt   DateTime?
-  date        String
-  week        String?
-  month       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  taskId       Int
+  progress     Int        @default(0)
+  isCompleted  Boolean    @default(false)
+  completedAt  DateTime?
+  claimedAt    DateTime?
+  date         String
+  week         String?
+  month        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  task         Task       @relation(fields: [taskId], references: [id])
+  userGrowth   UserGrowth @relation(fields: [userGrowthId], references: [id])
 
   @@unique([userGrowthId, taskId, date])
 }
 
 model GrowthLog {
-  id          Int      @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   userGrowthId Int
-  userGrowth  UserGrowth @relation(fields: [userGrowthId], references: [id])
-  type        String
-  amount      Int      @default(0)
-  description String
-  sourceType  String?
-  sourceId    Int?
-  createdAt   DateTime @default(now())
+  type         String
+  amount       Int        @default(0)
+  description  String
+  sourceType   String?
+  sourceId     Int?
+  createdAt    DateTime   @default(now())
+  userGrowth   UserGrowth @relation(fields: [userGrowthId], references: [id])
 }
 
 model UserBenefit {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
   benefitId   Int
-  benefit     Benefit  @relation(fields: [benefitId], references: [id])
-  isActive    Boolean  @default(true)
-  activatedAt DateTime @default(now())
+  isActive    Boolean   @default(true)
+  activatedAt DateTime  @default(now())
   expiresAt   DateTime?
+  benefit     Benefit   @relation(fields: [benefitId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
 
   @@unique([userId, benefitId])
 }
 
 model Event {
-  id              Int                @id @default(autoincrement())
-  title           String
-  description     String
-  coverImage      String?
-  location        String
-  address         String?
-  category        String             @default("OTHER")
-  tags            String             @default("[]")
-  startTime       DateTime
-  endTime         DateTime
+  id                   Int                 @id @default(autoincrement())
+  title                String
+  description          String
+  coverImage           String?
+  location             String
+  address              String?
+  category             String              @default("OTHER")
+  tags                 String              @default("[]")
+  startTime            DateTime
+  endTime              DateTime
   registrationDeadline DateTime?
-  maxParticipants Int                @default(0)
-  minParticipants Int                @default(0)
-  fee             Float              @default(0)
-  organizer       String?
-  organizerContact String?
-  requirements    String?
-  notice          String?
-  status          String             @default("DRAFT")
-  isFeatured      Boolean            @default(false)
-  sortOrder       Int                @default(0)
-  viewCount       Int                @default(0)
-  creatorId       Int
-  creator         User               @relation(fields: [creatorId], references: [id])
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-
-  registrations   EventRegistration[]
-  checkIns        EventCheckIn[]
+  maxParticipants      Int                 @default(0)
+  minParticipants      Int                 @default(0)
+  fee                  Float               @default(0)
+  organizer            String?
+  organizerContact     String?
+  requirements         String?
+  notice               String?
+  status               String              @default("DRAFT")
+  isFeatured           Boolean             @default(false)
+  sortOrder            Int                 @default(0)
+  viewCount            Int                 @default(0)
+  creatorId            Int
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  creator              User                @relation(fields: [creatorId], references: [id])
+  checkIns             EventCheckIn[]
+  registrations        EventRegistration[]
 }
 
 model EventRegistration {
-  id          Int      @id @default(autoincrement())
-  eventId     Int
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  name        String
-  phone       String
-  email       String?
-  company     String?
-  note        String?
-  status      String   @default("PENDING")
+  id              Int           @id @default(autoincrement())
+  eventId         Int
+  userId          Int
+  name            String
+  phone           String
+  email           String?
+  company         String?
+  note            String?
+  status          String        @default("PENDING")
   rejectionReason String?
-  reviewerId  Int?
-  reviewer    User?    @relation("EventRegistrationReviewer", fields: [reviewerId], references: [id])
-  reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  checkIn     EventCheckIn?
+  reviewerId      Int?
+  reviewedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  checkIn         EventCheckIn?
+  reviewer        User?         @relation("EventRegistrationReviewer", fields: [reviewerId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
 }
 
 model EventCheckIn {
-  id              Int      @id @default(autoincrement())
-  eventId         Int
-  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  registrationId  Int      @unique
-  registration    EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
-  userId          Int
-  user            User     @relation(fields: [userId], references: [id])
-  checkInTime     DateTime @default(now())
-  checkInType     String   @default("QRCODE")
-  operatorId      Int?
-  operator        User?    @relation("EventCheckInOperator", fields: [operatorId], references: [id])
-  remark          String?
-  createdAt       DateTime @default(now())
+  id             Int               @id @default(autoincrement())
+  eventId        Int
+  registrationId Int               @unique
+  userId         Int
+  checkInTime    DateTime          @default(now())
+  checkInType    String            @default("QRCODE")
+  operatorId     Int?
+  remark         String?
+  createdAt      DateTime          @default(now())
+  operator       User?             @relation("EventCheckInOperator", fields: [operatorId], references: [id])
+  user           User              @relation(fields: [userId], references: [id])
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, registrationId])
 }
 
 model Collection {
-  id          Int              @id @default(autoincrement())
+  id          Int                 @id @default(autoincrement())
   title       String
   description String
   coverImage  String?
   content     String
   category    String
-  tags        String           @default("[]")
-  status      String           @default("DRAFT")
-  sortOrder   Int              @default(0)
-  viewCount   Int              @default(0)
-  likeCount   Int              @default(0)
-  isFeatured  Boolean          @default(false)
+  tags        String              @default("[]")
+  status      String              @default("DRAFT")
+  sortOrder   Int                 @default(0)
+  viewCount   Int                 @default(0)
+  likeCount   Int                 @default(0)
+  isFeatured  Boolean             @default(false)
   creatorId   Int
-  creator     User             @relation(fields: [creatorId], references: [id])
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  creator     User                @relation(fields: [creatorId], references: [id])
   zines       CollectionZine[]
   featured    FeaturedCollection?
 }
 
 model CollectionZine {
-  id           Int       @id @default(autoincrement())
-  collectionId Int
-  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  zineId       Int
-  zine         Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
-  sortOrder    Int       @default(0)
+  id            Int        @id @default(autoincrement())
+  collectionId  Int
+  zineId        Int
+  sortOrder     Int        @default(0)
   recommendNote String?
-  addedAt      DateTime  @default(now())
+  addedAt       DateTime   @default(now())
+  zine          Zine       @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@unique([collectionId, zineId])
 }
 
 model FeaturedCollection {
-  id             Int      @id @default(autoincrement())
-  collectionId   Int      @unique
-  collection     Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  id             Int        @id @default(autoincrement())
+  collectionId   Int        @unique
   bannerImage    String?
   bannerTitle    String?
   bannerSubtitle String?
-  sortOrder      Int      @default(0)
+  sortOrder      Int        @default(0)
   startDate      DateTime?
   endDate        DateTime?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  collection     Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 }
 
 model Crowdfunding {
-  id              Int                 @id @default(autoincrement())
-  title           String
-  description     String
-  coverImage      String?
-  category        String              @default("ZINE")
-  tags            String              @default("[]")
-  targetAmount    Float               @default(0)
-  currentAmount   Float               @default(0)
-  backerCount     Int                 @default(0)
-  deadline        DateTime?
-  startTime       DateTime?
-  status          String              @default("DRAFT")
-  rejectionReason String?
-  reviewerId      Int?
-  reviewer        User?               @relation("CrowdfundingReviewer", fields: [reviewerId], references: [id])
-  reviewedAt      DateTime?
-  isFeatured      Boolean             @default(false)
-  sortOrder       Int                 @default(0)
-  viewCount       Int                 @default(0)
-  stockThreshold  Int                 @default(0)
-  lowStockAlert   Boolean             @default(false)
-  creatorId       Int
-  creator         User                @relation(fields: [creatorId], references: [id])
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-
-  tiers           CrowdfundingTier[]
-  orders          CrowdfundingOrder[]
+  id                  Int                   @id @default(autoincrement())
+  title               String
+  description         String
+  coverImage          String?
+  category            String                @default("ZINE")
+  tags                String                @default("[]")
+  targetAmount        Float                 @default(0)
+  currentAmount       Float                 @default(0)
+  backerCount         Int                   @default(0)
+  deadline            DateTime?
+  startTime           DateTime?
+  status              String                @default("DRAFT")
+  rejectionReason     String?
+  reviewerId          Int?
+  reviewedAt          DateTime?
+  isFeatured          Boolean               @default(false)
+  sortOrder           Int                   @default(0)
+  viewCount           Int                   @default(0)
+  commentCount        Int                   @default(0)
+  stockThreshold      Int                   @default(0)
+  lowStockAlert       Boolean               @default(false)
+  creatorId           Int
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  creator             User                  @relation(fields: [creatorId], references: [id])
+  reviewer            User?                 @relation("CrowdfundingReviewer", fields: [reviewerId], references: [id])
+  CrowdfundingComment CrowdfundingComment[]
+  orders              CrowdfundingOrder[]
+  tiers               CrowdfundingTier[]
 }
 
 model CrowdfundingTier {
-  id              Int                 @id @default(autoincrement())
-  crowdfundingId  Int
-  crowdfunding    Crowdfunding        @relation(fields: [crowdfundingId], references: [id], onDelete: Cascade)
-  name            String
-  description     String?
-  price           Float
-  stock           Int                 @default(0)
-  soldCount       Int                 @default(0)
-  sortOrder       Int                 @default(0)
-  deliveryDate    DateTime?
-  perks           String              @default("[]")
-  isUnlimited     Boolean             @default(false)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-
-  orders          CrowdfundingOrder[]
+  id             Int                 @id @default(autoincrement())
+  crowdfundingId Int
+  name           String
+  description    String?
+  price          Float
+  stock          Int                 @default(0)
+  soldCount      Int                 @default(0)
+  sortOrder      Int                 @default(0)
+  deliveryDate   DateTime?
+  perks          String              @default("[]")
+  isUnlimited    Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  orders         CrowdfundingOrder[]
+  crowdfunding   Crowdfunding        @relation(fields: [crowdfundingId], references: [id], onDelete: Cascade)
 
   @@index([crowdfundingId])
 }
 
 model CrowdfundingOrder {
-  id              Int                 @id @default(autoincrement())
-  orderNo         String              @unique
+  id              Int              @id @default(autoincrement())
+  orderNo         String           @unique
   crowdfundingId  Int
-  crowdfunding    Crowdfunding        @relation(fields: [crowdfundingId], references: [id])
   tierId          Int
-  tier            CrowdfundingTier    @relation(fields: [tierId], references: [id])
   userId          Int
-  user            User                @relation(fields: [userId], references: [id])
   amount          Float
-  quantity        Int                 @default(1)
-  status          String              @default("PENDING")
+  quantity        Int              @default(1)
+  status          String           @default("PENDING")
   receiverName    String?
   receiverPhone   String?
   receiverAddress String?
   remark          String?
-  paymentMethod   String              @default("BALANCE")
+  paymentMethod   String           @default("BALANCE")
   paidAt          DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?
   cancelledAt     DateTime?
   cancelReason    String?
   trackingNumber  String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id])
+  tier            CrowdfundingTier @relation(fields: [tierId], references: [id])
+  crowdfunding    Crowdfunding     @relation(fields: [crowdfundingId], references: [id])
 
   @@index([crowdfundingId])
   @@index([userId])
@@ -849,33 +899,32 @@ model CrowdfundingOrder {
 }
 
 model Report {
-  id              Int       @id @default(autoincrement())
-  type            String    @default("CONTENT")
-  reason          String
-  description     String?
-  targetType      String
-  targetId        Int
-  targetTitle     String?
-  evidence        String    @default("[]")
-  status          String    @default("PENDING")
-  priority        String    @default("NORMAL")
-  handlerLevel    String    @default("LEVEL_1")
-  handlerId       Int?
-  handler         User?     @relation("UserReports", fields: [handlerId], references: [id])
-  handledAt       DateTime?
-  handleResult    String?
-  handleNote      String?
-  penaltyType     String?
-  penaltyDetail   String?
-  reporterId      Int
-  reporter        User      @relation("ReportReporter", fields: [reporterId], references: [id])
-  targetUserId    Int?
-  targetUser      User?     @relation("ReportTarget", fields: [targetUserId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  appeals         Appeal[]
-  logs            ReportLog[]
+  id            Int         @id @default(autoincrement())
+  type          String      @default("CONTENT")
+  reason        String
+  description   String?
+  targetType    String
+  targetId      Int
+  targetTitle   String?
+  evidence      String      @default("[]")
+  status        String      @default("PENDING")
+  priority      String      @default("NORMAL")
+  handlerLevel  String      @default("LEVEL_1")
+  handlerId     Int?
+  handledAt     DateTime?
+  handleResult  String?
+  handleNote    String?
+  penaltyType   String?
+  penaltyDetail String?
+  reporterId    Int
+  targetUserId  Int?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  appeals       Appeal[]
+  targetUser    User?       @relation("ReportTarget", fields: [targetUserId], references: [id])
+  reporter      User        @relation("ReportReporter", fields: [reporterId], references: [id])
+  handler       User?       @relation("UserReports", fields: [handlerId], references: [id])
+  logs          ReportLog[]
 
   @@index([status])
   @@index([reporterId])
@@ -885,23 +934,22 @@ model Report {
 }
 
 model Appeal {
-  id              Int      @id @default(autoincrement())
-  reportId        Int
-  report          Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  reason          String
-  evidence        String   @default("[]")
-  status          String   @default("PENDING")
-  handlerId       Int?
-  handler         User?    @relation("AppealHandler", fields: [handlerId], references: [id])
-  handledAt       DateTime?
-  handleResult    String?
-  handleNote      String?
-  appellantId     Int
-  appellant       User     @relation("AppealAppellant", fields: [appellantId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  logs            ReportLog[]
+  id           Int         @id @default(autoincrement())
+  reportId     Int
+  reason       String
+  evidence     String      @default("[]")
+  status       String      @default("PENDING")
+  handlerId    Int?
+  handledAt    DateTime?
+  handleResult String?
+  handleNote   String?
+  appellantId  Int
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  appellant    User        @relation("AppealAppellant", fields: [appellantId], references: [id])
+  handler      User?       @relation("AppealHandler", fields: [handlerId], references: [id])
+  report       Report      @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  logs         ReportLog[]
 
   @@index([reportId])
   @@index([status])
@@ -909,16 +957,16 @@ model Appeal {
 }
 
 model ReportLog {
-  id          Int      @id @default(autoincrement())
-  reportId    Int
-  report      Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  appealId    Int?
-  appeal      Appeal?  @relation(fields: [appealId], references: [id], onDelete: Cascade)
-  action      String
-  detail      String?
-  operatorId  Int
-  operator    User     @relation(fields: [operatorId], references: [id])
-  createdAt   DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  reportId   Int
+  appealId   Int?
+  action     String
+  detail     String?
+  operatorId Int
+  createdAt  DateTime @default(now())
+  operator   User     @relation(fields: [operatorId], references: [id])
+  appeal     Appeal?  @relation(fields: [appealId], references: [id], onDelete: Cascade)
+  report     Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
   @@index([appealId])
@@ -926,27 +974,26 @@ model ReportLog {
 }
 
 model CreationCalendar {
-  id              Int      @id @default(autoincrement())
+  id              Int                    @id @default(autoincrement())
   title           String
   description     String?
-  eventType       String   @default("SCHEDULE")
+  eventType       String                 @default("SCHEDULE")
   startDate       DateTime
   endDate         DateTime?
-  color           String   @default("#d4624a")
-  status          String   @default("ACTIVE")
-  isAllDay        Boolean  @default(true)
-  reminderEnabled Boolean  @default(false)
-  reminderMinutes Int      @default(30)
+  color           String                 @default("#d4624a")
+  status          String                 @default("ACTIVE")
+  isAllDay        Boolean                @default(true)
+  reminderEnabled Boolean                @default(false)
+  reminderMinutes Int                    @default(30)
   linkType        String?
   linkId          Int?
   creatorId       Int
-  creator         User     @relation(fields: [creatorId], references: [id])
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
+  sortOrder       Int                    @default(0)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
   reminders       CalendarReminder[]
   subscriptions   CalendarSubscription[]
+  creator         User                   @relation(fields: [creatorId], references: [id])
 
   @@index([creatorId])
   @@index([startDate])
@@ -957,12 +1004,12 @@ model CreationCalendar {
 model CalendarReminder {
   id              Int              @id @default(autoincrement())
   calendarEventId Int
-  calendarEvent   CreationCalendar @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
   userId          Int
-  user            User             @relation(fields: [userId], references: [id])
   remindAt        DateTime
   isSent          Boolean          @default(false)
   createdAt       DateTime         @default(now())
+  user            User             @relation(fields: [userId], references: [id])
+  calendarEvent   CreationCalendar @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
 
   @@unique([calendarEventId, userId])
   @@index([userId])
@@ -973,36 +1020,36 @@ model CalendarReminder {
 model CalendarSubscription {
   id              Int              @id @default(autoincrement())
   calendarEventId Int
-  calendarEvent   CreationCalendar @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
   userId          Int
-  user            User             @relation(fields: [userId], references: [id])
   createdAt       DateTime         @default(now())
+  user            User             @relation(fields: [userId], references: [id])
+  calendarEvent   CreationCalendar @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
 
   @@unique([calendarEventId, userId])
   @@index([userId])
 }
 
 model ProofreadingTask {
-  id           Int       @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   zineId       Int?
-  zine         Zine?     @relation(fields: [zineId], references: [id])
   submissionId Int?
-  submission   Submission? @relation(fields: [submissionId], references: [id])
   title        String
   content      String
-  type         String    @default("ZINE")
-  status       String    @default("PENDING")
-  priority     String    @default("NORMAL")
+  type         String      @default("ZINE")
+  status       String      @default("PENDING")
+  priority     String      @default("NORMAL")
   deadline     DateTime?
   assigneeId   Int?
-  assignee     User?     @relation("ProofreadingAssignee", fields: [assigneeId], references: [id])
   creatorId    Int
-  creator      User      @relation("ProofreadingCreator", fields: [creatorId], references: [id])
   feedback     String?
-  corrections  String    @default("[]")
+  corrections  String      @default("[]")
   completedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  creator      User        @relation("ProofreadingCreator", fields: [creatorId], references: [id])
+  assignee     User?       @relation("ProofreadingAssignee", fields: [assigneeId], references: [id])
+  submission   Submission? @relation(fields: [submissionId], references: [id])
+  zine         Zine?       @relation(fields: [zineId], references: [id])
 
   @@index([status])
   @@index([assigneeId])
@@ -1020,28 +1067,28 @@ model EditorTemplate {
   sortOrder   Int      @default(0)
   usageCount  Int      @default(0)
   creatorId   Int
-  creator     User     @relation(fields: [creatorId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  creator     User     @relation(fields: [creatorId], references: [id])
 
   @@index([type])
   @@index([category])
 }
 
 model CollaborationNote {
-  id           Int       @id @default(autoincrement())
-  targetType   String
-  targetId     Int
-  targetTitle  String?
-  content      String
-  color        String    @default("#ffeaa7")
-  isPinned     Boolean   @default(false)
-  creatorId    Int
-  creator      User      @relation(fields: [creatorId], references: [id])
-  mentions     String    @default("[]")
-  attachments  String    @default("[]")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id          Int      @id @default(autoincrement())
+  targetType  String
+  targetId    Int
+  targetTitle String?
+  content     String
+  color       String   @default("#ffeaa7")
+  isPinned    Boolean  @default(false)
+  creatorId   Int
+  mentions    String   @default("[]")
+  attachments String   @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator     User     @relation(fields: [creatorId], references: [id])
 
   @@index([targetType, targetId])
   @@index([creatorId])
@@ -1049,18 +1096,18 @@ model CollaborationNote {
 }
 
 model WorkflowRecord {
-  id           Int      @id @default(autoincrement())
-  targetType   String
-  targetId     Int
-  targetTitle  String?
-  action       String
-  fromStatus   String?
-  toStatus     String?
-  remark       String?
-  metadata     String   @default("{}")
-  operatorId   Int
-  operator     User     @relation(fields: [operatorId], references: [id])
-  createdAt    DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  targetType  String
+  targetId    Int
+  targetTitle String?
+  action      String
+  fromStatus  String?
+  toStatus    String?
+  remark      String?
+  metadata    String   @default("{}")
+  operatorId  Int
+  createdAt   DateTime @default(now())
+  operator    User     @relation(fields: [operatorId], references: [id])
 
   @@index([targetType, targetId])
   @@index([operatorId])
@@ -1069,66 +1116,65 @@ model WorkflowRecord {
 }
 
 model ReviewPerformance {
-  id            Int      @id @default(autoincrement())
-  reviewerId    Int      @unique
-  reviewer      User     @relation(fields: [reviewerId], references: [id])
-  periodType    String   @default("MONTHLY")
-  periodStart   DateTime
-  periodEnd     DateTime
-  totalReviews  Int      @default(0)
-  approvedCount Int      @default(0)
-  rejectedCount Int      @default(0)
-  avgReviewTime Float    @default(0)
-  avgScore      Float    @default(0)
-  submissions   Int      @default(0)
-  topicSubs     Int      @default(0)
-  collaborations Int     @default(0)
-  crowdfundings Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  reviewerId     Int      @unique
+  periodType     String   @default("MONTHLY")
+  periodStart    DateTime
+  periodEnd      DateTime
+  totalReviews   Int      @default(0)
+  approvedCount  Int      @default(0)
+  rejectedCount  Int      @default(0)
+  avgReviewTime  Float    @default(0)
+  avgScore       Float    @default(0)
+  submissions    Int      @default(0)
+  topicSubs      Int      @default(0)
+  collaborations Int      @default(0)
+  crowdfundings  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  reviewer       User     @relation(fields: [reviewerId], references: [id])
 
   @@index([periodType])
   @@index([reviewerId])
 }
 
 model SwapListing {
-  id              Int       @id @default(autoincrement())
-  title           String
-  description     String
-  coverImage      String?
-  haveZineId      Int?
-  haveZine        Zine?     @relation("HaveZine", fields: [haveZineId], references: [id])
-  haveZineTitle   String?
-  haveZineAuthor   String?
-  haveZineCategory String?
-  haveZineCondition String  @default("GOOD")
-  wantZineId      Int?
-  wantZine        Zine?     @relation("WantZine", fields: [wantZineId], references: [id])
-  wantZineTitle   String?
-  wantZineAuthor String?
-  wantZineCategory String?
-  wantTags         String    @default("[]")
-  haveTags         String    @default("[]")
-  category        String    @default("ZINE")
-  exchangeType    String    @default("SWAP")
-  location        String?
-  shippingMethod  String?
-  status          String    @default("DRAFT")
-  rejectionReason String?
-  reviewerId      Int?
-  reviewer        User?     @relation("SwapListingReviewer", fields: [reviewerId], references: [id])
-  reviewedAt      DateTime?
-  isFeatured      Boolean   @default(false)
-  sortOrder       Int       @default(0)
-  viewCount       Int       @default(0)
-  matchCount      Int       @default(0)
-  creatorId       Int
-  creator         User     @relation(fields: [creatorId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  matchesAsA      SwapMatch[] @relation("MatchListingA")
-  matchesAsB      SwapMatch[] @relation("MatchListingB")
+  id                Int         @id @default(autoincrement())
+  title             String
+  description       String
+  coverImage        String?
+  haveZineId        Int?
+  haveZineTitle     String?
+  haveZineAuthor    String?
+  haveZineCategory  String?
+  haveZineCondition String      @default("GOOD")
+  wantZineId        Int?
+  wantZineTitle     String?
+  wantZineAuthor    String?
+  wantZineCategory  String?
+  wantTags          String      @default("[]")
+  haveTags          String      @default("[]")
+  category          String      @default("ZINE")
+  exchangeType      String      @default("SWAP")
+  location          String?
+  shippingMethod    String?
+  status            String      @default("DRAFT")
+  rejectionReason   String?
+  reviewerId        Int?
+  reviewedAt        DateTime?
+  isFeatured        Boolean     @default(false)
+  sortOrder         Int         @default(0)
+  viewCount         Int         @default(0)
+  matchCount        Int         @default(0)
+  creatorId         Int
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  creator           User        @relation(fields: [creatorId], references: [id])
+  reviewer          User?       @relation("SwapListingReviewer", fields: [reviewerId], references: [id])
+  wantZine          Zine?       @relation("WantZine", fields: [wantZineId], references: [id])
+  haveZine          Zine?       @relation("HaveZine", fields: [haveZineId], references: [id])
+  matchesAsB        SwapMatch[] @relation("MatchListingB")
+  matchesAsA        SwapMatch[] @relation("MatchListingA")
 
   @@index([status])
   @@index([creatorId])
@@ -1137,39 +1183,38 @@ model SwapListing {
 }
 
 model SwapMatch {
-  id              Int       @id @default(autoincrement())
-  listingAId      Int
-  listingA        SwapListing @relation("MatchListingA", fields: [listingAId], references: [id], onDelete: Cascade)
-  listingBId      Int
-  listingB        SwapListing @relation("MatchListingB", fields: [listingBId], references: [id], onDelete: Cascade)
-  matchScore      Float     @default(0)
-  status          String    @default("PENDING")
-  initiatorId    Int
-  initiator       User      @relation("SwapInitiator", fields: [initiatorId], references: [id])
-  responderId    Int
-  responder       User      @relation("SwapResponder", fields: [responderId], references: [id])
-  initiatorConfirmed Boolean  @default(false)
-  responderConfirmed Boolean  @default(false)
-  createdAt       DateTime  @default(now())
-  confirmedAt    DateTime?
-  completedAt    DateTime?
-
-  messages        SwapMessage[]
+  id                 Int           @id @default(autoincrement())
+  listingAId         Int
+  listingBId         Int
+  matchScore         Float         @default(0)
+  status             String        @default("PENDING")
+  initiatorId        Int
+  responderId        Int
+  initiatorConfirmed Boolean       @default(false)
+  responderConfirmed Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  confirmedAt        DateTime?
+  completedAt        DateTime?
+  responder          User          @relation("SwapResponder", fields: [responderId], references: [id])
+  initiator          User          @relation("SwapInitiator", fields: [initiatorId], references: [id])
+  listingB           SwapListing   @relation("MatchListingB", fields: [listingBId], references: [id], onDelete: Cascade)
+  listingA           SwapListing   @relation("MatchListingA", fields: [listingAId], references: [id], onDelete: Cascade)
+  messages           SwapMessage[]
 
   @@unique([listingAId, listingBId])
   @@index([status])
 }
 
 model SwapMessage {
-  id              Int       @id @default(autoincrement())
-  matchId         Int
-  match           SwapMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  senderId        Int
-  sender          User      @relation("SwapMessageSender", fields: [senderId], references: [id])
-  content         String
-  isRead          Boolean   @default(false)
-  type            String    @default("TEXT")
-  createdAt       DateTime  @default(now())
+  id        Int       @id @default(autoincrement())
+  matchId   Int
+  senderId  Int
+  content   String
+  isRead    Boolean   @default(false)
+  type      String    @default("TEXT")
+  createdAt DateTime  @default(now())
+  sender    User      @relation("SwapMessageSender", fields: [senderId], references: [id])
+  match     SwapMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   @@index([matchId])
   @@index([senderId])
@@ -1177,45 +1222,44 @@ model SwapMessage {
 }
 
 model MembershipPlan {
-  id            Int              @id @default(autoincrement())
-  name          String
-  code          String           @unique
-  description   String
-  price         Float            @default(0)
-  originalPrice Float            @default(0)
-  durationDays  Int              @default(30)
-  level         Int              @default(1)
-  color         String           @default("#d4624a")
-  icon          String?
-  benefits      String           @default("[]")
-  sortOrder     Int              @default(0)
-  isActive      Boolean          @default(true)
-  isRecommended Boolean          @default(false)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  userMemberships UserMembership[]
+  id              Int                 @id @default(autoincrement())
+  name            String
+  code            String              @unique
+  description     String
+  price           Float               @default(0)
+  originalPrice   Float               @default(0)
+  durationDays    Int                 @default(30)
+  level           Int                 @default(1)
+  color           String              @default("#d4624a")
+  icon            String?
+  benefits        String              @default("[]")
+  sortOrder       Int                 @default(0)
+  isActive        Boolean             @default(true)
+  isRecommended   Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
   messages        MembershipMessage[]
+  userMemberships UserMembership[]
 }
 
 model UserMembership {
-  id             Int             @id @default(autoincrement())
-  userId         Int
-  user           User            @relation(fields: [userId], references: [id])
-  planId         Int
-  plan           MembershipPlan  @relation(fields: [planId], references: [id])
-  status         String          @default("ACTIVE")
-  startDate      DateTime        @default(now())
-  endDate        DateTime
-  autoRenew      Boolean         @default(false)
-  orderNo        String?         @unique
-  amount         Float           @default(0)
-  paymentMethod  String          @default("BALANCE")
-  paidAt         DateTime?
-  cancelledAt    DateTime?
-  cancelReason   String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  planId        Int
+  status        String         @default("ACTIVE")
+  startDate     DateTime       @default(now())
+  endDate       DateTime
+  autoRenew     Boolean        @default(false)
+  orderNo       String?        @unique
+  amount        Float          @default(0)
+  paymentMethod String         @default("BALANCE")
+  paidAt        DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  plan          MembershipPlan @relation(fields: [planId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
 
   @@unique([userId, planId, status])
   @@index([userId])
@@ -1224,56 +1268,56 @@ model UserMembership {
 }
 
 model ExclusiveZine {
-  id            Int       @id @default(autoincrement())
-  title         String
-  description   String
-  coverImage    String?
-  content       String
-  category      String    @default("MEMBER")
-  tags          String    @default("[]")
-  minLevel      Int       @default(1)
-  requirePlan   Boolean   @default(false)
-  status        String    @default("PUBLISHED")
-  views         Int       @default(0)
-  sortOrder     Int       @default(0)
-  isFeatured    Boolean   @default(false)
-  creatorId     Int
-  creator       User      @relation(fields: [creatorId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  coverImage  String?
+  content     String
+  category    String   @default("MEMBER")
+  tags        String   @default("[]")
+  minLevel    Int      @default(1)
+  requirePlan Boolean  @default(false)
+  status      String   @default("PUBLISHED")
+  views       Int      @default(0)
+  sortOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  creatorId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator     User     @relation(fields: [creatorId], references: [id])
 }
 
 model EarlyAccess {
-  id            Int       @id @default(autoincrement())
-  title         String
-  description   String
-  coverImage    String?
-  content       String
-  zineId        Int?
-  zine          Zine?     @relation(fields: [zineId], references: [id])
-  publishDate   DateTime
-  minLevel      Int       @default(1)
-  requirePlan   Boolean   @default(false)
-  earlyHours    Int       @default(24)
-  status        String    @default("PENDING")
-  views         Int       @default(0)
-  sortOrder     Int       @default(0)
-  creatorId     Int
-  creator       User      @relation(fields: [creatorId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  coverImage  String?
+  content     String
+  zineId      Int?
+  publishDate DateTime
+  minLevel    Int      @default(1)
+  requirePlan Boolean  @default(false)
+  earlyHours  Int      @default(24)
+  status      String   @default("PENDING")
+  views       Int      @default(0)
+  sortOrder   Int      @default(0)
+  creatorId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator     User     @relation(fields: [creatorId], references: [id])
+  zine        Zine?    @relation(fields: [zineId], references: [id])
 }
 
 model BenefitCheckLog {
-  id             Int       @id @default(autoincrement())
-  userId         Int
-  user           User      @relation(fields: [userId], references: [id])
-  benefitCode    String
-  resourceType   String
-  resourceId     Int
-  hasAccess      Boolean   @default(false)
-  denialReason   String?
-  checkAt        DateTime  @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  benefitCode  String
+  resourceType String
+  resourceId   Int
+  hasAccess    Boolean  @default(false)
+  denialReason String?
+  checkAt      DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([benefitCode])
@@ -1281,91 +1325,90 @@ model BenefitCheckLog {
 }
 
 model MembershipMessage {
-  id             Int       @id @default(autoincrement())
-  code           String    @unique
-  name           String
-  title          String
-  content        String
-  type           String    @default("SYSTEM")
-  trigger        String    @default("MANUAL")
-  targetLevel    Int?
-  targetPlanId   Int?
-  targetPlan     MembershipPlan? @relation(fields: [targetPlanId], references: [id])
-  isActive       Boolean   @default(true)
-  sentCount      Int       @default(0)
-  lastSentAt     DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id           Int             @id @default(autoincrement())
+  code         String          @unique
+  name         String
+  title        String
+  content      String
+  type         String          @default("SYSTEM")
+  trigger      String          @default("MANUAL")
+  targetLevel  Int?
+  targetPlanId Int?
+  isActive     Boolean         @default(true)
+  sentCount    Int             @default(0)
+  lastSentAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  targetPlan   MembershipPlan? @relation(fields: [targetPlanId], references: [id])
 }
 
 model MembershipConfig {
-  id             Int       @id @default(autoincrement())
-  key            String    @unique
-  value          String
-  description    String?
-  updatedAt      DateTime  @updatedAt
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
 }
 
 model Interview {
-  id              Int       @id @default(autoincrement())
+  id              Int                 @id @default(autoincrement())
   title           String
   description     String
   coverImage      String?
   content         String
-  category        String    @default("CREATOR")
-  tags            String    @default("[]")
+  category        String              @default("CREATOR")
+  tags            String              @default("[]")
   authorName      String
   authorAvatar    String?
   authorBio       String?
   authorUserId    Int?
-  authorUser      User?     @relation("InterviewAuthor", fields: [authorUserId], references: [id])
   interviewerName String?
   publishDate     DateTime?
-  status          String    @default("DRAFT")
+  status          String              @default("DRAFT")
   rejectionReason String?
   reviewerId      Int?
-  reviewer        User?     @relation("InterviewReviewer", fields: [reviewerId], references: [id])
   reviewedAt      DateTime?
-  isFeatured      Boolean   @default(false)
-  sortOrder       Int       @default(0)
-  viewCount       Int       @default(0)
-  likeCount       Int       @default(0)
-  commentCount    Int       @default(0)
+  isFeatured      Boolean             @default(false)
+  sortOrder       Int                 @default(0)
+  viewCount       Int                 @default(0)
+  likeCount       Int                 @default(0)
+  commentCount    Int                 @default(0)
   creatorId       Int
-  creator         User      @relation(fields: [creatorId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  zines           InterviewZine[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  featured        FeaturedInterview?
+  creator         User                @relation(fields: [creatorId], references: [id])
+  reviewer        User?               @relation("InterviewReviewer", fields: [reviewerId], references: [id])
+  authorUser      User?               @relation("InterviewAuthor", fields: [authorUserId], references: [id])
   comments        InterviewComment[]
   schedules       InterviewSchedule[]
-  featured        FeaturedInterview?
+  zines           InterviewZine[]
 }
 
 model InterviewZine {
-  id              Int       @id @default(autoincrement())
-  interviewId     Int
-  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  zineId          Int
-  zine            Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
-  sortOrder       Int       @default(0)
-  recommendNote   String?
-  addedAt         DateTime  @default(now())
+  id            Int       @id @default(autoincrement())
+  interviewId   Int
+  zineId        Int
+  sortOrder     Int       @default(0)
+  recommendNote String?
+  addedAt       DateTime  @default(now())
+  zine          Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  interview     Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 
   @@unique([interviewId, zineId])
 }
 
 model InterviewComment {
-  id              Int       @id @default(autoincrement())
-  interviewId     Int
-  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  userId          Int
-  user            User      @relation(fields: [userId], references: [id])
-  content         String
-  isPinned        Boolean   @default(false)
-  status          String    @default("APPROVED")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          Int       @id @default(autoincrement())
+  interviewId Int
+  userId      Int
+  content     String
+  isPinned    Boolean   @default(false)
+  status      String    @default("APPROVED")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id])
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 
   @@index([interviewId])
   @@index([userId])
@@ -1373,18 +1416,18 @@ model InterviewComment {
 }
 
 model InterviewSchedule {
-  id              Int       @id @default(autoincrement())
-  interviewId     Int
-  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  title           String
-  description     String?
-  scheduledAt     DateTime
-  status          String    @default("PENDING")
-  note            String?
-  creatorId       Int
-  creator         User      @relation(fields: [creatorId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          Int       @id @default(autoincrement())
+  interviewId Int
+  title       String
+  description String?
+  scheduledAt DateTime
+  status      String    @default("PENDING")
+  note        String?
+  creatorId   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creator     User      @relation(fields: [creatorId], references: [id])
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 
   @@index([interviewId])
   @@index([scheduledAt])
@@ -1392,18 +1435,18 @@ model InterviewSchedule {
 }
 
 model FeaturedInterview {
-  id              Int       @id @default(autoincrement())
-  interviewId     Int       @unique
-  interview       Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
-  bannerImage     String?
-  bannerTitle     String?
-  bannerSubtitle  String?
-  sortOrder       Int       @default(0)
-  startDate       DateTime?
-  endDate         DateTime?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             Int       @id @default(autoincrement())
+  interviewId    Int       @unique
+  bannerImage    String?
+  bannerTitle    String?
+  bannerSubtitle String?
+  sortOrder      Int       @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  interview      Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
 }
 
 model PrintOrder {
@@ -1415,7 +1458,6 @@ model PrintOrder {
   tags            String    @default("[]")
   status          String    @default("DRAFT")
   rejectionReason String?
-
   paperType       String    @default("COATED")
   paperSize       String    @default("A5")
   pageCount       Int       @default(1)
@@ -1424,14 +1466,11 @@ model PrintOrder {
   coverType       String    @default("SOFT")
   printQuantity   Int       @default(100)
   specialReq      String    @default("[]")
-
   unitPrice       Float?
   totalPrice      Float?
   quotationNote   String?
   quotedAt        DateTime?
   quoterId        Int?
-  quoter          User?     @relation("PrintOrderQuoter", fields: [quoterId], references: [id])
-
   contactName     String
   contactPhone    String
   contactAddress  String?
@@ -1439,14 +1478,14 @@ model PrintOrder {
   deliveryDate    DateTime?
   attachments     String    @default("[]")
   remark          String?
-
   reviewerId      Int?
-  reviewer        User?     @relation("PrintOrderReviewer", fields: [reviewerId], references: [id])
   reviewedAt      DateTime?
   creatorId       Int
-  creator         User      @relation(fields: [creatorId], references: [id])
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  creator         User      @relation(fields: [creatorId], references: [id])
+  reviewer        User?     @relation("PrintOrderReviewer", fields: [reviewerId], references: [id])
+  quoter          User?     @relation("PrintOrderQuoter", fields: [quoterId], references: [id])
 
   @@index([status])
   @@index([creatorId])
@@ -1455,37 +1494,36 @@ model PrintOrder {
 }
 
 model Competition {
-  id              Int       @id @default(autoincrement())
+  id              Int                @id @default(autoincrement())
   title           String
   description     String
   coverImage      String?
-  category        String    @default("CREATION")
-  tags            String    @default("[]")
+  category        String             @default("CREATION")
+  tags            String             @default("[]")
   rules           String?
   prizes          String?
-  judges          String    @default("[]")
+  judges          String             @default("[]")
   startDate       DateTime
   endDate         DateTime
   resultDate      DateTime?
-  maxEntries      Int       @default(0)
-  status          String    @default("DRAFT")
+  maxEntries      Int                @default(0)
+  status          String             @default("DRAFT")
   rejectionReason String?
   reviewerId      Int?
-  reviewer        User?     @relation("CompetitionJudge", fields: [reviewerId], references: [id])
   reviewedAt      DateTime?
-  isFeatured      Boolean   @default(false)
-  sortOrder       Int       @default(0)
-  viewCount       Int       @default(0)
-  entryCount      Int       @default(0)
-  scoringMode     String    @default("AVERAGE")
-  isResultPublic  Boolean   @default(false)
+  isFeatured      Boolean            @default(false)
+  sortOrder       Int                @default(0)
+  viewCount       Int                @default(0)
+  entryCount      Int                @default(0)
+  scoringMode     String             @default("AVERAGE")
+  isResultPublic  Boolean            @default(false)
   creatorId       Int
-  creator         User      @relation("CompetitionCreator", fields: [creatorId], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  groups          CompetitionGroup[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  creator         User               @relation("CompetitionCreator", fields: [creatorId], references: [id])
+  reviewer        User?              @relation("CompetitionJudge", fields: [reviewerId], references: [id])
   entries         CompetitionEntry[]
+  groups          CompetitionGroup[]
 
   @@index([status])
   @@index([creatorId])
@@ -1495,38 +1533,36 @@ model Competition {
 }
 
 model CompetitionGroup {
-  id            Int       @id @default(autoincrement())
+  id            Int                @id @default(autoincrement())
   competitionId Int
-  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   name          String
   description   String?
-  sortOrder     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
+  sortOrder     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   entries       CompetitionEntry[]
+  competition   Competition        @relation(fields: [competitionId], references: [id], onDelete: Cascade)
 
   @@index([competitionId])
 }
 
 model CompetitionEntry {
-  id              Int       @id @default(autoincrement())
+  id              Int                @id @default(autoincrement())
   competitionId   Int
-  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   groupId         Int?
-  group           CompetitionGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
   userId          Int
-  user            User      @relation(fields: [userId], references: [id])
   title           String
   content         String
-  images          String    @default("[]")
-  status          String    @default("PENDING")
+  images          String             @default("[]")
+  status          String             @default("PENDING")
   rejectionReason String?
   reviewerId      Int?
   reviewedAt      DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  user            User               @relation(fields: [userId], references: [id])
+  group           CompetitionGroup?  @relation(fields: [groupId], references: [id])
+  competition     Competition        @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   scores          CompetitionScore[]
 
   @@unique([competitionId, userId])
@@ -1537,17 +1573,412 @@ model CompetitionEntry {
 }
 
 model CompetitionScore {
-  id          Int       @id @default(autoincrement())
-  entryId     Int
-  entry       CompetitionEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  judgeId     Int
-  judge       User      @relation(fields: [judgeId], references: [id])
-  score       Float     @default(0)
-  comment     String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int              @id @default(autoincrement())
+  entryId   Int
+  judgeId   Int
+  score     Float            @default(0)
+  comment   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  judge     User             @relation(fields: [judgeId], references: [id])
+  entry     CompetitionEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
   @@unique([entryId, judgeId])
   @@index([entryId])
   @@index([judgeId])
+}
+
+model AssetCategory {
+  id            Int             @id @default(autoincrement())
+  name          String
+  slug          String          @unique
+  icon          String?
+  description   String?
+  type          String          @default("GENERAL")
+  sortOrder     Int             @default(0)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  AssetResource AssetResource[]
+
+  @@index([sortOrder])
+  @@index([type])
+}
+
+model AssetDownload {
+  id            Int           @id @default(autoincrement())
+  resourceId    Int
+  userId        Int
+  status        String        @default("SUCCESS")
+  failReason    String?
+  createdAt     DateTime      @default(now())
+  User          User          @relation(fields: [userId], references: [id])
+  AssetResource AssetResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, userId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model AssetResource {
+  id            Int             @id @default(autoincrement())
+  title         String
+  description   String?
+  coverImage    String?
+  fileUrl       String
+  fileName      String          @default("")
+  fileSize      Int             @default(0)
+  fileType      String          @default("IMAGE")
+  categoryId    Int
+  tags          String          @default("[]")
+  type          String          @default("COVER_TEMPLATE")
+  minLevel      Int             @default(0)
+  requirePlan   Boolean         @default(false)
+  isFree        Boolean         @default(true)
+  status        String          @default("PUBLISHED")
+  viewCount     Int             @default(0)
+  downloadCount Int             @default(0)
+  isFeatured    Boolean         @default(false)
+  sortOrder     Int             @default(0)
+  creatorId     Int
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  AssetDownload AssetDownload[]
+  User          User            @relation(fields: [creatorId], references: [id])
+  AssetCategory AssetCategory   @relation(fields: [categoryId], references: [id])
+
+  @@index([createdAt])
+  @@index([sortOrder])
+  @@index([isFeatured])
+  @@index([status])
+  @@index([type])
+  @@index([categoryId])
+}
+
+model BrandCoop {
+  id                              Int                 @id @default(autoincrement())
+  title                           String
+  brandName                       String
+  brandLogo                       String?
+  description                     String
+  coverImage                      String?
+  category                        String              @default("COBRANDING")
+  tags                            String              @default("[]")
+  cooperationType                 String              @default("COBRANDING")
+  contactPerson                   String?
+  contactPhone                    String?
+  contactEmail                    String?
+  budget                          String?
+  startDate                       DateTime?
+  endDate                         DateTime?
+  requirements                    String?
+  deliverables                    String?
+  notes                           String?
+  status                          String              @default("DRAFT")
+  kanbanColumn                    String              @default("PROPOSAL")
+  sortOrder                       Int                 @default(0)
+  rejectionReason                 String?
+  reviewerId                      Int?
+  reviewedAt                      DateTime?
+  isFeatured                      Boolean             @default(false)
+  viewCount                       Int                 @default(0)
+  creatorId                       Int
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime
+  User_BrandCoop_creatorIdToUser  User                @relation("BrandCoop_creatorIdToUser", fields: [creatorId], references: [id])
+  User_BrandCoop_reviewerIdToUser User?               @relation("BrandCoop_reviewerIdToUser", fields: [reviewerId], references: [id])
+  BrandCoopMessage                BrandCoopMessage[]
+  BrandCoopSchedule               BrandCoopSchedule[]
+  BrandCoopZine                   BrandCoopZine[]
+
+  @@index([createdAt])
+  @@index([category])
+  @@index([creatorId])
+  @@index([kanbanColumn])
+  @@index([status])
+}
+
+model BrandCoopMessage {
+  id          Int       @id @default(autoincrement())
+  brandCoopId Int
+  senderId    Int
+  content     String
+  type        String    @default("TEXT")
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  User        User      @relation(fields: [senderId], references: [id])
+  BrandCoop   BrandCoop @relation(fields: [brandCoopId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([senderId])
+  @@index([brandCoopId])
+}
+
+model BrandCoopSchedule {
+  id          Int       @id @default(autoincrement())
+  brandCoopId Int
+  title       String
+  description String?
+  plannedDate DateTime
+  actualDate  DateTime?
+  status      String    @default("PENDING")
+  assigneeId  Int?
+  remark      String?
+  sortOrder   Int       @default(0)
+  creatorId   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  BrandCoop   BrandCoop @relation(fields: [brandCoopId], references: [id], onDelete: Cascade)
+
+  @@index([plannedDate])
+  @@index([status])
+  @@index([brandCoopId])
+}
+
+model BrandCoopZine {
+  id            Int       @id @default(autoincrement())
+  brandCoopId   Int
+  zineId        Int
+  role          String    @default("RELATED")
+  recommendNote String?
+  sortOrder     Int       @default(0)
+  addedAt       DateTime  @default(now())
+  Zine          Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  BrandCoop     BrandCoop @relation(fields: [brandCoopId], references: [id], onDelete: Cascade)
+
+  @@unique([brandCoopId, zineId])
+  @@index([zineId])
+  @@index([brandCoopId])
+}
+
+model CopyrightLicense {
+  id                                      Int                   @id @default(autoincrement())
+  licenseNo                               String                @unique
+  title                                   String
+  workId                                  Int
+  workType                                String
+  workTitle                               String
+  workCoverImage                          String?
+  purposeCategory                         String                @default("OTHER")
+  purposeDetail                           String
+  usageScope                              String                @default("PERSONAL")
+  useRegions                              String                @default("[]")
+  commercialUse                           Boolean               @default(false)
+  derivativeAllowed                       Boolean               @default(false)
+  distributeAllowed                       Boolean               @default(false)
+  attributionRequired                     Boolean               @default(true)
+  licenseType                             String                @default("STANDARD")
+  licenseFee                              Float                 @default(0)
+  paymentStatus                           String                @default("UNPAID")
+  startDate                               DateTime?
+  endDate                                 DateTime?
+  durationDays                            Int                   @default(0)
+  applicantId                             Int
+  applicantContact                        String?
+  applicantCompany                        String?
+  authorId                                Int
+  authorConfirmed                         Boolean               @default(false)
+  authorConfirmedAt                       DateTime?
+  authorConfirmRemark                     String?
+  authorAskedPrice                        Float?
+  authorContractTerms                     String?
+  status                                  String                @default("DRAFT")
+  rejectionReason                         String?
+  reviewerId                              Int?
+  reviewedAt                              DateTime?
+  reviewRemark                            String?
+  contractContent                         String?
+  contractFile                            String?
+  contractSigned                          Boolean               @default(false)
+  contractSignedAt                        DateTime?
+  attachments                             String                @default("[]")
+  viewedCount                             Int                   @default(0)
+  createdAt                               DateTime              @default(now())
+  updatedAt                               DateTime
+  User_CopyrightLicense_reviewerIdToUser  User?                 @relation("CopyrightLicense_reviewerIdToUser", fields: [reviewerId], references: [id])
+  User_CopyrightLicense_authorIdToUser    User                  @relation("CopyrightLicense_authorIdToUser", fields: [authorId], references: [id])
+  User_CopyrightLicense_applicantIdToUser User                  @relation("CopyrightLicense_applicantIdToUser", fields: [applicantId], references: [id])
+  CopyrightLicenseLog                     CopyrightLicenseLog[]
+
+  @@index([licenseType])
+  @@index([createdAt])
+  @@index([workType, workId])
+  @@index([status])
+  @@index([authorId])
+  @@index([applicantId])
+}
+
+model CopyrightLicenseLog {
+  id               Int              @id @default(autoincrement())
+  licenseId        Int
+  action           String
+  fromStatus       String?
+  toStatus         String?
+  detail           String?
+  metadata         String           @default("{}")
+  operatorId       Int
+  createdAt        DateTime         @default(now())
+  User             User             @relation(fields: [operatorId], references: [id])
+  CopyrightLicense CopyrightLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([operatorId])
+  @@index([licenseId])
+}
+
+model CreatorWallet {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  balance         Float    @default(0)
+  frozenAmount    Float    @default(0)
+  totalRevenue    Float    @default(0)
+  totalWithdrawn  Float    @default(0)
+  pendingWithdraw Float    @default(0)
+  bankName        String?
+  bankAccount     String?
+  bankAccountName String?
+  alipayAccount   String?
+  wechatAccount   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model CrowdfundingComment {
+  id                        Int                       @id @default(autoincrement())
+  crowdfundingId            Int
+  userId                    Int
+  content                   String
+  parentId                  Int?
+  replyToUserId             Int?
+  likeCount                 Int                       @default(0)
+  isPinned                  Boolean                   @default(false)
+  status                    String                    @default("APPROVED")
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime
+  CrowdfundingComment       CrowdfundingComment?      @relation("CrowdfundingCommentToCrowdfundingComment", fields: [parentId], references: [id], onDelete: Cascade)
+  other_CrowdfundingComment CrowdfundingComment[]     @relation("CrowdfundingCommentToCrowdfundingComment")
+  User                      User                      @relation(fields: [userId], references: [id])
+  Crowdfunding              Crowdfunding              @relation(fields: [crowdfundingId], references: [id], onDelete: Cascade)
+  CrowdfundingCommentLike   CrowdfundingCommentLike[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([parentId])
+  @@index([userId])
+  @@index([crowdfundingId])
+}
+
+model CrowdfundingCommentLike {
+  id                  Int                 @id @default(autoincrement())
+  commentId           Int
+  userId              Int
+  createdAt           DateTime            @default(now())
+  User                User                @relation(fields: [userId], references: [id])
+  CrowdfundingComment CrowdfundingComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+  @@index([commentId])
+}
+
+model RevenueRecord {
+  id          Int          @id @default(autoincrement())
+  userId      Int
+  type        String
+  sourceType  String
+  sourceId    Int?
+  sourceTitle String?
+  amount      Float
+  description String?
+  status      String       @default("SETTLED")
+  ruleId      Int?
+  orderNo     String?
+  settleDate  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  RevenueRule RevenueRule? @relation(fields: [ruleId], references: [id])
+  User        User         @relation(fields: [userId], references: [id])
+
+  @@index([settleDate])
+  @@index([createdAt])
+  @@index([status])
+  @@index([sourceType, sourceId])
+  @@index([type])
+  @@index([userId])
+}
+
+model RevenueRule {
+  id            Int             @id @default(autoincrement())
+  name          String
+  code          String          @unique
+  description   String?
+  type          String
+  rate          Float           @default(0)
+  baseAmount    Float           @default(0)
+  minAmount     Float           @default(0)
+  maxAmount     Float?
+  level         Int             @default(1)
+  isActive      Boolean         @default(true)
+  sortOrder     Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  RevenueRecord RevenueRecord[]
+
+  @@index([sortOrder])
+  @@index([isActive])
+  @@index([type])
+}
+
+model WithdrawalAuditLog {
+  id                Int               @id @default(autoincrement())
+  withdrawalId      Int
+  action            String
+  fromStatus        String?
+  toStatus          String?
+  remark            String?
+  operatorId        Int
+  createdAt         DateTime          @default(now())
+  User              User              @relation(fields: [operatorId], references: [id])
+  WithdrawalRequest WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([operatorId])
+  @@index([withdrawalId])
+}
+
+model WithdrawalRequest {
+  id                                      Int                  @id @default(autoincrement())
+  withdrawNo                              String               @unique
+  userId                                  Int
+  amount                                  Float
+  fee                                     Float                @default(0)
+  actualAmount                            Float
+  withdrawMethod                          String
+  bankName                                String?
+  bankAccount                             String?
+  bankAccountName                         String?
+  alipayAccount                           String?
+  wechatAccount                           String?
+  status                                  String               @default("PENDING")
+  rejectionReason                         String?
+  reviewerId                              Int?
+  reviewedAt                              DateTime?
+  paidAt                                  DateTime?
+  transactionNo                           String?
+  remark                                  String?
+  createdAt                               DateTime             @default(now())
+  updatedAt                               DateTime
+  WithdrawalAuditLog                      WithdrawalAuditLog[]
+  User_WithdrawalRequest_reviewerIdToUser User?                @relation("WithdrawalRequest_reviewerIdToUser", fields: [reviewerId], references: [id])
+  User_WithdrawalRequest_userIdToUser     User                 @relation("WithdrawalRequest_userIdToUser", fields: [userId], references: [id])
+
+  @@index([reviewedAt])
+  @@index([createdAt])
+  @@index([status])
+  @@index([userId])
 }

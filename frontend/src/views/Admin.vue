@@ -163,6 +163,100 @@
       </div>
     </div>
 
+    <div v-if="currentTab === 'zineComments'" class="section">
+      <div class="flex justify-between items-center mb">
+        <div class="filter-tabs flex gap-sm">
+          <button
+            v-for="f in commentStatusFilters"
+            :key="f.value"
+            :class="['btn', commentStatusFilter === f.value ? 'btn-primary' : 'btn-secondary', 'btn-sm']"
+            @click="commentStatusFilter = f.value; loadComments(1)"
+          >
+            {{ f.label }}
+          </button>
+        </div>
+        <div class="search-box" style="width: 240px;">
+          <input
+            v-model="commentSearch"
+            type="text"
+            class="form-input"
+            placeholder="搜索评论内容..."
+            @input="debouncedCommentSearch"
+          >
+        </div>
+      </div>
+
+      <div v-if="loadingComments" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else-if="zineComments.length === 0" class="empty-state card" style="padding: 48px;">
+        <div class="empty-state-icon">💭</div>
+        <div class="empty-state-text text-sm">暂无评论</div>
+      </div>
+      <div v-else class="admin-list card">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>评论者</th>
+              <th>刊物</th>
+              <th>评论内容</th>
+              <th>类型</th>
+              <th>点赞</th>
+              <th>状态</th>
+              <th>时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="c in zineComments" :key="c.id">
+              <td>
+                <div class="flex items-center gap-sm">
+                  <img :src="c.user?.avatar" class="sub-user-avatar">
+                  <span class="text-sm font-medium">{{ c.user?.username }}</span>
+                </div>
+              </td>
+              <td class="text-sm">{{ c.zine?.title }}</td>
+              <td class="text-sm comment-cell">{{ c.content }}</td>
+              <td>
+                <span v-if="c.parentId" class="tag tag-reply">回复</span>
+                <span v-else class="tag tag-root">评论</span>
+              </td>
+              <td class="text-sm">{{ c._count?.likes || 0 }}</td>
+              <td>
+                <span :class="['badge', statusClass(c.status)]">{{ statusLabel(c.status) }}</span>
+              </td>
+              <td class="text-xs text-tertiary">{{ formatDate(c.createdAt) }}</td>
+              <td>
+                <div class="flex gap-xs">
+                  <button
+                    v-if="c.status !== 'APPROVED'"
+                    class="btn btn-ghost btn-sm"
+                    @click="updateCommentStatus(c, 'APPROVED')"
+                    title="审核通过"
+                  >✓</button>
+                  <button
+                    v-if="c.status !== 'HIDDEN'"
+                    class="btn btn-ghost btn-sm danger-btn"
+                    @click="updateCommentStatus(c, 'HIDDEN')"
+                    title="隐藏"
+                  >👁</button>
+                  <button
+                    class="btn btn-ghost btn-sm danger-btn"
+                    @click="deleteComment(c)"
+                    title="删除"
+                  >🗑</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div v-if="commentTotalPages > 1" class="pagination" style="margin-top: 16px;">
+          <button class="page-btn" :disabled="commentPage === 1" @click="loadComments(commentPage - 1)">←</button>
+          <span class="page-info">第 {{ commentPage }} / {{ commentTotalPages }} 页</span>
+          <button class="page-btn" :disabled="commentPage === commentTotalPages" @click="loadComments(commentPage + 1)">→</button>
+        </div>
+      </div>
+    </div>
+
     <div v-if="currentTab === 'topics'" class="section">
       <div class="flex justify-between items-center mb">
         <h3 class="font-semibold">专题列表</h3>
@@ -1192,6 +1286,7 @@ const tabs = [
   { label: '排期管理', value: 'schedules', icon: '📅' },
   { label: '首页曝光', value: 'featured', icon: '🔥' },
   { label: '刊物管理', value: 'zines', icon: '📚' },
+  { label: '评论审核', value: 'zineComments', icon: '💬' },
   { label: '用户管理', value: 'users', icon: '👥' },
   { label: '成长规则', value: 'growth', icon: '⭐' }
 ]
@@ -1225,6 +1320,20 @@ const allTopics = ref([])
 const topicSubs = ref([])
 const schedules = ref([])
 const featuredList = ref([])
+
+const zineComments = ref([])
+const commentStatusFilter = ref('all')
+const commentSearch = ref('')
+const commentPage = ref(1)
+const commentTotalPages = ref(1)
+const loadingComments = ref(false)
+
+const commentStatusFilters = [
+  { label: '全部', value: 'all' },
+  { label: '已通过', value: 'APPROVED' },
+  { label: '已隐藏', value: 'HIDDEN' },
+  { label: '待审核', value: 'PENDING' }
+]
 const loadingRecent = ref(true)
 const loadingSubs = ref(false)
 const loadingZines = ref(false)
@@ -1306,7 +1415,8 @@ const statusClass = (s) => ({
   SCHEDULED: 'badge-scheduled',
   APPROVED: 'badge-approved',
   REJECTED: 'badge-rejected',
-  WITHDRAWN: 'badge-withdrawn'
+  WITHDRAWN: 'badge-withdrawn',
+  HIDDEN: 'badge-rejected'
 }[s] || '')
 
 const statusLabel = (s) => ({
@@ -1315,7 +1425,8 @@ const statusLabel = (s) => ({
   SCHEDULED: '定时中',
   APPROVED: '已通过',
   REJECTED: '已驳回',
-  WITHDRAWN: '已撤回'
+  WITHDRAWN: '已撤回',
+  HIDDEN: '已隐藏'
 }[s] || s)
 
 const formatDate = (date) => {
@@ -1334,6 +1445,7 @@ const switchTab = (tab) => {
   currentTab.value = tab
   if (tab === 'submissions') loadSubmissions()
   if (tab === 'zines') loadZines()
+  if (tab === 'zineComments') loadComments()
   if (tab === 'users') loadUsers()
   if (tab === 'overview') loadOverview()
   if (tab === 'topics') loadTopics()
@@ -1696,6 +1808,52 @@ const loadZines = async () => {
     allZines.value = res.zines
   } catch (e) {}
   finally { loadingZines.value = false }
+}
+
+const loadComments = async (newPage = 1) => {
+  loadingComments.value = true
+  commentPage.value = newPage
+  try {
+    const params = new URLSearchParams({ page: newPage, limit: 20 })
+    if (commentStatusFilter.value !== 'all') params.set('status', commentStatusFilter.value)
+    if (commentSearch.value) params.set('keyword', commentSearch.value)
+    const res = await api.get(`/admin/zine-comments/comments?${params}`)
+    zineComments.value = res.comments
+    commentTotalPages.value = res.totalPages
+  } catch (e) {
+    showToast(e.error || '加载失败', 'error')
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const debouncedCommentSearch = (() => {
+  let timer
+  return () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => loadComments(1), 300)
+  }
+})()
+
+const updateCommentStatus = async (comment, status) => {
+  try {
+    await api.put(`/admin/zine-comments/comments/${comment.id}/status`, { status })
+    showToast('操作成功', 'success')
+    loadComments(commentPage.value)
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
+const deleteComment = async (comment) => {
+  if (!confirm('确定要删除这条评论吗？删除后不可恢复。')) return
+  try {
+    await api.delete(`/admin/zine-comments/comments/${comment.id}`)
+    showToast('已删除', 'success')
+    loadComments(commentPage.value)
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
+  }
 }
 
 const loadUsers = async () => {
@@ -2339,5 +2497,51 @@ onMounted(() => loadOverview())
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+.comment-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-reply {
+  background: #f9f0ff;
+  color: #722ed1;
+}
+
+.tag-root {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.page-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.page-info {
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 </style>

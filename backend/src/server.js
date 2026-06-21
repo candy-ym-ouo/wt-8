@@ -50,6 +50,8 @@ const readingReviewRoutes = require('./routes/reading-reviews');
 const adminReadingRoutes = require('./routes/admin-reading');
 const competitionRoutes = require('./routes/competitions');
 const adminCompetitionRoutes = require('./routes/admin-competitions');
+const zineCommentRoutes = require('./routes/zine-comments');
+const adminZineCommentRoutes = require('./routes/admin-zine-comments');
 
 fastify.register(cors, {
   origin: true,
@@ -84,10 +86,12 @@ fastify.decorate('adminOnly', async function (request, reply) {
 
 fastify.register(authRoutes, { prefix: '/api/auth' });
 fastify.register(zineRoutes, { prefix: '/api/zines' });
+fastify.register(zineCommentRoutes, { prefix: '/api/zines' });
 fastify.register(submissionRoutes, { prefix: '/api/submissions' });
 fastify.register(subscriptionRoutes, { prefix: '/api/subscriptions' });
 fastify.register(messageRoutes, { prefix: '/api/messages' });
 fastify.register(adminRoutes, { prefix: '/api/admin' });
+fastify.register(adminZineCommentRoutes, { prefix: '/api/admin/zine-comments' });
 fastify.register(userRoutes, { prefix: '/api/users' });
 fastify.register(topicRoutes, { prefix: '/api/topics' });
 fastify.register(topicSubmissionRoutes, { prefix: '/api/topic-submissions' });
