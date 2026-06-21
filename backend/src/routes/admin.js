@@ -128,6 +128,20 @@ async function routes(fastify, options) {
       sourceId: zine.id
     });
 
+    await prisma.workflowRecord.create({
+      data: {
+        targetType: 'SUBMISSION',
+        targetId: submission.id,
+        targetTitle: submission.title,
+        action: 'APPROVE',
+        fromStatus: 'PENDING',
+        toStatus: 'APPROVED',
+        remark: '审核通过',
+        metadata: JSON.stringify({ zineId: zine.id }),
+        operatorId: request.user.id
+      }
+    });
+
     return { zine: formatZine(zine), message: '审核通过，已发布' };
   });
 
@@ -144,13 +158,29 @@ async function routes(fastify, options) {
       return reply.code(400).send({ error: '该投稿当前状态不可审核' });
     }
 
-    const { reason } = request.body;
+    const { reason, templateId } = request.body;
+
+    let template = null;
+    let finalReason = reason || '';
+
+    if (templateId) {
+      template = await prisma.rejectTemplate.findUnique({
+        where: { id: Number(templateId) }
+      });
+      if (template && template.isActive) {
+        finalReason = template.content + (reason ? '\n\n' + reason : '');
+        await prisma.rejectTemplate.update({
+          where: { id: template.id },
+          data: { usageCount: { increment: 1 } }
+        });
+      }
+    }
 
     await prisma.submission.update({
       where: { id: submission.id },
       data: {
         status: 'REJECTED',
-        rejectionReason: reason || '未通过审核',
+        rejectionReason: finalReason || '未通过审核',
         reviewerId: request.user.id,
         reviewedAt: new Date()
       }
@@ -161,8 +191,22 @@ async function routes(fastify, options) {
         senderId: request.user.id,
         receiverId: submission.userId,
         title: '投稿审核未通过',
-        content: `您的投稿《${submission.title}》未通过审核。${reason ? '原因：' + reason : '如有疑问，可修改后重新投稿。'}\n\n继续创作，感谢支持！`,
+        content: `您的投稿《${submission.title}》未通过审核。${finalReason ? '原因：' + finalReason : '如有疑问，可修改后重新投稿。'}\n\n继续创作，感谢支持！`,
         type: 'SYSTEM'
+      }
+    });
+
+    await prisma.workflowRecord.create({
+      data: {
+        targetType: 'SUBMISSION',
+        targetId: submission.id,
+        targetTitle: submission.title,
+        action: 'REJECT',
+        fromStatus: 'PENDING',
+        toStatus: 'REJECTED',
+        remark: '审核驳回',
+        metadata: JSON.stringify({ reason: finalReason, templateId }),
+        operatorId: request.user.id
       }
     });
 

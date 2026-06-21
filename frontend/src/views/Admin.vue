@@ -2251,6 +2251,7 @@ const openApprove = (sub) => {
 const openReject = (sub) => {
   selectedSub.value = sub
   rejectReason.value = ''
+  singleRejectTemplateId.value = null
   showReject.value = true
 }
 
