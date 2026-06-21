@@ -153,9 +153,9 @@ async function routes(fastify, options) {
         data: {
           senderId: adminId,
           receiverId: withdrawal.userId,
-          title: '提现申请已通过',
+          title: '💰 提现申请已通过',
           content: `您的提现申请（单号：${withdrawal.withdrawNo}，金额：¥${withdrawal.actualAmount}）已审核通过，请注意查收。`,
-          type: 'SYSTEM'
+          type: 'FINANCE'
         }
       });
 
@@ -218,9 +218,9 @@ async function routes(fastify, options) {
         data: {
           senderId: adminId,
           receiverId: withdrawal.userId,
-          title: '提现申请被驳回',
+          title: '💰 提现申请被驳回',
           content: `您的提现申请（单号：${withdrawal.withdrawNo}，金额：¥${withdrawal.amount}）被驳回。\n驳回原因：${rejectionReason}`,
-          type: 'SYSTEM'
+          type: 'FINANCE'
         }
       });
 

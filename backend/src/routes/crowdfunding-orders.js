@@ -1,3 +1,5 @@
+const { addRevenue } = require('../utils/revenueService');
+
 function generateOrderNo() {
   const now = new Date();
   const timestamp = now.getFullYear().toString() +
@@ -211,93 +213,109 @@ async function routes(fastify, options) {
       return reply.code(400).send({ error: '库存不足' });
     }
 
-    const updatedOrder = await prisma.crowdfundingOrder.update({
-      where: { id: Number(id) },
-      data: {
-        status: 'PAID',
-        paidAt: new Date()
-      },
-      include: {
-        crowdfunding: true,
-        tier: true
-      }
-    });
-
-    await prisma.crowdfundingTier.update({
-      where: { id: order.tierId },
-      data: {
-        soldCount: { increment: order.quantity }
-      }
-    });
-
-    const crowdfunding = await prisma.crowdfunding.update({
-      where: { id: order.crowdfundingId },
-      data: {
-        currentAmount: { increment: order.amount },
-        backerCount: { increment: 1 }
-      }
-    });
-
-    const progress = crowdfunding.targetAmount > 0
-      ? Math.round((crowdfunding.currentAmount / crowdfunding.targetAmount) * 100)
-      : 0;
-
-    if (progress >= 100 && crowdfunding.status === 'PUBLISHED') {
-      await prisma.crowdfunding.update({
-        where: { id: order.crowdfundingId },
-        data: { status: 'SUCCESSFUL' }
-      });
-
-      await prisma.message.create({
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.crowdfundingOrder.update({
+        where: { id: Number(id) },
         data: {
-          senderId: 1,
-          receiverId: crowdfunding.creatorId,
-          title: '🎉 众筹项目已达成目标！',
-          content: `恭喜！您的众筹项目《${crowdfunding.title}》已成功达成目标金额！\n\n当前筹款：¥${crowdfunding.currentAmount}\n目标金额：¥${crowdfunding.targetAmount}\n支持人数：${crowdfunding.backerCount}人\n\n感谢您的努力，请及时处理订单发货。`,
-          type: 'CROWDFUNDING'
+          status: 'PAID',
+          paidAt: new Date()
+        },
+        include: {
+          crowdfunding: true,
+          tier: true
         }
       });
-    }
 
-    const updatedTier = await prisma.crowdfundingTier.findUnique({
-      where: { id: order.tierId }
-    });
+      await tx.crowdfundingTier.update({
+        where: { id: order.tierId },
+        data: {
+          soldCount: { increment: order.quantity }
+        }
+      });
 
-    const remainingStock = updatedTier.isUnlimited ? -1 : updatedTier.stock - updatedTier.soldCount;
-    if (crowdfunding.stockThreshold > 0 && remainingStock > 0 && remainingStock <= crowdfunding.stockThreshold) {
-      if (!crowdfunding.lowStockAlert) {
-        await prisma.crowdfunding.update({
+      let crowdfunding = await tx.crowdfunding.update({
+        where: { id: order.crowdfundingId },
+        data: {
+          currentAmount: { increment: order.amount },
+          backerCount: { increment: 1 }
+        }
+      });
+
+      const progress = crowdfunding.targetAmount > 0
+        ? Math.round((crowdfunding.currentAmount / crowdfunding.targetAmount) * 100)
+        : 0;
+
+      if (progress >= 100 && crowdfunding.status === 'PUBLISHED') {
+        crowdfunding = await tx.crowdfunding.update({
           where: { id: order.crowdfundingId },
-          data: { lowStockAlert: true }
+          data: { status: 'SUCCESSFUL' }
         });
 
-        await prisma.message.create({
+        await tx.message.create({
           data: {
             senderId: 1,
             receiverId: crowdfunding.creatorId,
-            title: '⚠️ 库存预警提醒',
-            content: `您的众筹项目《${crowdfunding.title}》档位【${updatedTier.name}】库存已不足${crowdfunding.stockThreshold}件！\n\n当前剩余：${remainingStock}件\n\n请及时关注库存情况。`,
+            title: '🎉 众筹项目已达成目标！',
+            content: `恭喜！您的众筹项目《${crowdfunding.title}》已成功达成目标金额！\n\n当前筹款：¥${crowdfunding.currentAmount}\n目标金额：¥${crowdfunding.targetAmount}\n支持人数：${crowdfunding.backerCount}人\n\n感谢您的努力，请及时处理订单发货。`,
             type: 'CROWDFUNDING'
           }
         });
       }
-    }
 
-    await prisma.message.create({
-      data: {
-        senderId: request.user.id,
-        receiverId: request.user.id,
-        title: '✅ 支持成功！',
-        content: `您已成功支持众筹项目《${crowdfunding.title}》\n\n档位：${tier.name}\n金额：¥${order.amount}\n订单号：${order.orderNo}\n\n感谢您的支持，我们会尽快为您处理订单。`,
-        type: 'CROWDFUNDING'
+      const updatedTier = await tx.crowdfundingTier.findUnique({
+        where: { id: order.tierId }
+      });
+
+      const remainingStock = updatedTier.isUnlimited ? -1 : updatedTier.stock - updatedTier.soldCount;
+      if (crowdfunding.stockThreshold > 0 && remainingStock > 0 && remainingStock <= crowdfunding.stockThreshold) {
+        if (!crowdfunding.lowStockAlert) {
+          await tx.crowdfunding.update({
+            where: { id: order.crowdfundingId },
+            data: { lowStockAlert: true }
+          });
+
+          await tx.message.create({
+            data: {
+              senderId: 1,
+              receiverId: crowdfunding.creatorId,
+              title: '⚠️ 库存预警提醒',
+              content: `您的众筹项目《${crowdfunding.title}》档位【${updatedTier.name}】库存已不足${crowdfunding.stockThreshold}件！\n\n当前剩余：${remainingStock}件\n\n请及时关注库存情况。`,
+              type: 'CROWDFUNDING'
+            }
+          });
+        }
       }
+
+      await tx.message.create({
+        data: {
+          senderId: request.user.id,
+          receiverId: request.user.id,
+          title: '✅ 支持成功！',
+          content: `您已成功支持众筹项目《${crowdfunding.title}》\n\n档位：${tier.name}\n金额：¥${order.amount}\n订单号：${order.orderNo}\n\n感谢您的支持，我们会尽快为您处理订单。`,
+          type: 'CROWDFUNDING'
+        }
+      });
+
+      await addRevenue(
+        crowdfunding.creatorId,
+        'CROWDFUNDING_SALE',
+        order.amount,
+        'CROWDFUNDING',
+        crowdfunding.id,
+        crowdfunding.title,
+        `众筹支持收益 - 档位【${tier.name}】`,
+        order.orderNo,
+        tx
+      );
+
+      return { updatedOrder, crowdfunding };
     });
 
     return {
       order: {
-        ...updatedOrder,
-        tier: formatTier(updatedOrder.tier),
-        statusText: getOrderStatusText(updatedOrder.status)
+        ...result.updatedOrder,
+        tier: formatTier(result.updatedOrder.tier),
+        statusText: getOrderStatusText(result.updatedOrder.status)
       },
       message: '支付成功'
     };

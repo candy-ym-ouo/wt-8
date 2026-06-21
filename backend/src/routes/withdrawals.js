@@ -145,6 +145,16 @@ async function routes(fastify, options) {
         }
       });
 
+      await tx.message.create({
+        data: {
+          senderId: userId,
+          receiverId: userId,
+          title: '💰 提现申请已提交',
+          content: `您已提交提现申请，等待财务审核。\n\n提现单号：${withdrawal.withdrawNo}\n提现金额：¥${withdrawal.amount}\n手续费：¥${withdrawal.fee}\n实际到账：¥${withdrawal.actualAmount}\n提现方式：${withdrawMethod === 'BANK' ? '银行卡' : withdrawMethod === 'ALIPAY' ? '支付宝' : '微信'}\n\n审核通过后将尽快为您处理打款。`,
+          type: 'FINANCE'
+        }
+      });
+
       return withdrawal;
     });
 
@@ -190,6 +200,16 @@ async function routes(fastify, options) {
           toStatus: 'CANCELLED',
           remark: '用户取消提现申请',
           operatorId: userId
+        }
+      });
+
+      await tx.message.create({
+        data: {
+          senderId: userId,
+          receiverId: userId,
+          title: '💰 提现申请已取消',
+          content: `您已取消提现申请。\n\n提现单号：${withdrawal.withdrawNo}\n提现金额：¥${withdrawal.amount}\n\n金额已退回至您的钱包余额。`,
+          type: 'FINANCE'
         }
       });
 
