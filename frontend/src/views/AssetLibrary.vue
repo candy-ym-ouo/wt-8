@@ -294,7 +294,7 @@ const viewResource = async (r) => {
     selectedResource.value = res.resource
     canDownload.value = res.canDownload
     denialReason.value = res.denialReason
-    alreadyDownloaded.value = false
+    alreadyDownloaded.value = !!res.alreadyDownloaded
     currentTab.value = 'detail'
   } catch (e) {
     showToast(e.error || '加载失败', 'error')
@@ -306,8 +306,9 @@ const downloadResource = async () => {
   downloading.value = true
   try {
     const res = await api.post(`/asset-library/resources/${selectedResource.value.id}/download`)
-    alreadyDownloaded.value = true
+    alreadyDownloaded.value = !!res.alreadyDownloaded
     canDownload.value = true
+    denialReason.value = null
     if (res.fileUrl) {
       const a = document.createElement('a')
       a.href = res.fileUrl
@@ -317,11 +318,12 @@ const downloadResource = async () => {
       a.click()
       document.body.removeChild(a)
     }
-    showToast('下载成功', 'success')
+    showToast(res.alreadyDownloaded ? '重新下载成功' : '下载成功', 'success')
   } catch (e) {
     if (e.error) {
       denialReason.value = e.error
       canDownload.value = false
+      alreadyDownloaded.value = false
       showToast(e.error, 'error')
     } else {
       showToast('下载失败', 'error')

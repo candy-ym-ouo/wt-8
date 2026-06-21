@@ -82,33 +82,42 @@ async function routes(fastify, options) {
 
     let canDownload = resource.isFree;
     let denialReason = null;
+    let alreadyDownloaded = false;
 
     if (!canDownload && request.headers.authorization) {
       try {
         const payload = await fastify.jwt.verify(request.headers.authorization.replace('Bearer ', ''));
         const user = await prisma.user.findUnique({ where: { id: payload.id } });
         if (user) {
-          if (resource.requirePlan) {
-            const membership = await prisma.userMembership.findFirst({
-              where: { userId: user.id, status: 'ACTIVE', endDate: { gte: new Date() } }
-            });
-            if (membership) {
-              canDownload = true;
-            } else {
-              denialReason = '需要会员权限';
-            }
-          }
-          if (!canDownload && resource.minLevel > 0) {
-            const growth = await prisma.userGrowth.findUnique({ where: { userId: user.id } });
-            if (growth && growth.levelId) {
-              const level = await prisma.level.findUnique({ where: { id: growth.levelId } });
-              if (level && level.level >= resource.minLevel) {
+          const existingDownload = await prisma.assetDownload.findUnique({
+            where: { resourceId_userId: { resourceId: id, userId: user.id } }
+          });
+          if (existingDownload && existingDownload.status === 'SUCCESS') {
+            alreadyDownloaded = true;
+            canDownload = true;
+          } else {
+            if (resource.requirePlan) {
+              const membership = await prisma.userMembership.findFirst({
+                where: { userId: user.id, status: 'ACTIVE', endDate: { gte: new Date() } }
+              });
+              if (membership) {
                 canDownload = true;
+              } else {
+                denialReason = '需要会员权限';
+              }
+            }
+            if (!canDownload && resource.minLevel > 0) {
+              const growth = await prisma.userGrowth.findUnique({ where: { userId: user.id } });
+              if (growth && growth.levelId) {
+                const level = await prisma.level.findUnique({ where: { id: growth.levelId } });
+                if (level && level.level >= resource.minLevel) {
+                  canDownload = true;
+                } else {
+                  denialReason = `需要达到 Lv.${resource.minLevel} 等级`;
+                }
               } else {
                 denialReason = `需要达到 Lv.${resource.minLevel} 等级`;
               }
-            } else {
-              denialReason = `需要达到 Lv.${resource.minLevel} 等级`;
             }
           }
         }
@@ -119,7 +128,7 @@ async function routes(fastify, options) {
       denialReason = '请先登录';
     }
 
-    return { resource, canDownload, denialReason };
+    return { resource, canDownload, denialReason, alreadyDownloaded };
   });
 
   fastify.post('/resources/:id/download', { preHandler: [fastify.authenticate] }, async (request, reply) => {
@@ -134,50 +143,77 @@ async function routes(fastify, options) {
       where: { resourceId_userId: { resourceId: id, userId: request.user.id } }
     });
 
-    if (existing) {
+    if (existing && existing.status === 'SUCCESS') {
       return { download: existing, fileUrl: resource.fileUrl, fileName: resource.fileName, alreadyDownloaded: true };
     }
 
-    if (!resource.isFree) {
+    let permissionPassed = resource.isFree;
+    let failReason = null;
+
+    if (!permissionPassed) {
       if (resource.requirePlan) {
         const membership = await prisma.userMembership.findFirst({
           where: { userId: request.user.id, status: 'ACTIVE', endDate: { gte: new Date() } }
         });
-        if (!membership) {
-          const download = await prisma.assetDownload.create({
-            data: { resourceId: id, userId: request.user.id, status: 'FAILED', failReason: '需要会员权限' }
-          });
-          return reply.code(403).send({ error: '需要会员权限才能下载此资源', download });
+        if (membership) {
+          permissionPassed = true;
+        } else {
+          failReason = '需要会员权限';
         }
       }
-      if (resource.minLevel > 0) {
+      if (!permissionPassed && resource.minLevel > 0) {
         const growth = await prisma.userGrowth.findUnique({ where: { userId: request.user.id } });
         if (!growth || !growth.levelId) {
-          const download = await prisma.assetDownload.create({
-            data: { resourceId: id, userId: request.user.id, status: 'FAILED', failReason: `需要达到 Lv.${resource.minLevel} 等级` }
-          });
-          return reply.code(403).send({ error: `需要达到 Lv.${resource.minLevel} 等级`, download });
-        }
-        const level = await prisma.level.findUnique({ where: { id: growth.levelId } });
-        if (!level || level.level < resource.minLevel) {
-          const download = await prisma.assetDownload.create({
-            data: { resourceId: id, userId: request.user.id, status: 'FAILED', failReason: `需要达到 Lv.${resource.minLevel} 等级` }
-          });
-          return reply.code(403).send({ error: `需要达到 Lv.${resource.minLevel} 等级`, download });
+          failReason = `需要达到 Lv.${resource.minLevel} 等级`;
+        } else {
+          const level = await prisma.level.findUnique({ where: { id: growth.levelId } });
+          if (level && level.level >= resource.minLevel) {
+            permissionPassed = true;
+          } else {
+            failReason = `需要达到 Lv.${resource.minLevel} 等级`;
+          }
         }
       }
     }
 
-    const download = await prisma.assetDownload.create({
-      data: { resourceId: id, userId: request.user.id, status: 'SUCCESS' }
-    });
+    if (!permissionPassed) {
+      let download;
+      if (existing) {
+        download = await prisma.assetDownload.update({
+          where: { id: existing.id },
+          data: { status: 'FAILED', failReason, createdAt: new Date() }
+        });
+      } else {
+        download = await prisma.assetDownload.create({
+          data: { resourceId: id, userId: request.user.id, status: 'FAILED', failReason }
+        });
+      }
+      return reply.code(403).send({ error: failReason, download });
+    }
 
-    await prisma.assetResource.update({
-      where: { id },
-      data: { downloadCount: { increment: 1 } }
-    });
+    let download;
+    let isNewSuccess = false;
+    if (existing) {
+      download = await prisma.assetDownload.update({
+        where: { id: existing.id },
+        data: { status: 'SUCCESS', failReason: null, createdAt: new Date() }
+      });
+      isNewSuccess = existing.status !== 'SUCCESS';
+    } else {
+      download = await prisma.assetDownload.create({
+        data: { resourceId: id, userId: request.user.id, status: 'SUCCESS' }
+      });
+      isNewSuccess = true;
+    }
 
-    return { download, fileUrl: resource.fileUrl, fileName: resource.fileName, alreadyDownloaded: false };
+    if (isNewSuccess) {
+      await prisma.assetResource.update({
+        where: { id },
+        data: { downloadCount: { increment: 1 } }
+      });
+    }
+
+    return { download, fileUrl: resource.fileUrl, fileName: resource.fileName, alreadyDownloaded: existing && existing.status === 'SUCCESS' };
   });
 
   fastify.get('/my-downloads', { preHandler: [fastify.authenticate] }, async (request) => {
