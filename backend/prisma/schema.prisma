@@ -101,6 +101,10 @@ model User {
   withdrawalRequests WithdrawalRequest[]
   reviewedWithdrawals WithdrawalRequest[] @relation("WithdrawalReviewer")
   withdrawalAuditLogs WithdrawalAuditLog[]
+
+  createdBrandCoops BrandCoop[]
+  reviewedBrandCoops BrandCoop[] @relation("BrandCoopReviewer")
+  brandCoopMessages BrandCoopMessage[]
 }
 
 model ReadingBook {
@@ -346,6 +350,7 @@ model Zine {
   swapListingsAsWant SwapListing[] @relation("WantZine")
   earlyAccesses EarlyAccess[]
   interviewZines InterviewZine[]
+  brandCoopZines BrandCoopZine[]
 }
 
 model Submission {
@@ -1837,5 +1842,102 @@ model WithdrawalAuditLog {
   @@index([withdrawalId])
   @@index([operatorId])
   @@index([action])
+  @@index([createdAt])
+}
+
+model BrandCoop {
+  id              Int       @id @default(autoincrement())
+  title           String
+  brandName       String
+  brandLogo       String?
+  description     String
+  coverImage      String?
+  category        String    @default("COBRANDING")
+  tags            String    @default("[]")
+  cooperationType String    @default("COBRANDING")
+  contactPerson   String?
+  contactPhone    String?
+  contactEmail    String?
+  budget          String?
+  startDate       DateTime?
+  endDate         DateTime?
+  requirements    String?
+  deliverables    String?
+  notes           String?
+  status          String    @default("DRAFT")
+  kanbanColumn    String    @default("PROPOSAL")
+  sortOrder       Int       @default(0)
+  rejectionReason String?
+  reviewerId      Int?
+  reviewer        User?     @relation("BrandCoopReviewer", fields: [reviewerId], references: [id])
+  reviewedAt      DateTime?
+  isFeatured      Boolean   @default(false)
+  viewCount       Int       @default(0)
+  creatorId       Int
+  creator         User      @relation(fields: [creatorId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  zines           BrandCoopZine[]
+  schedules       BrandCoopSchedule[]
+  messages        BrandCoopMessage[]
+
+  @@index([status])
+  @@index([kanbanColumn])
+  @@index([creatorId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model BrandCoopZine {
+  id            Int       @id @default(autoincrement())
+  brandCoopId   Int
+  brandCoop     BrandCoop @relation(fields: [brandCoopId], references: [id], onDelete: Cascade)
+  zineId        Int
+  zine          Zine      @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  role          String    @default("RELATED")
+  recommendNote String?
+  sortOrder     Int       @default(0)
+  addedAt       DateTime  @default(now())
+
+  @@unique([brandCoopId, zineId])
+  @@index([brandCoopId])
+  @@index([zineId])
+}
+
+model BrandCoopSchedule {
+  id          Int       @id @default(autoincrement())
+  brandCoopId Int
+  brandCoop   BrandCoop @relation(fields: [brandCoopId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  plannedDate DateTime
+  actualDate  DateTime?
+  status      String    @default("PENDING")
+  assigneeId  Int?
+  remark      String?
+  sortOrder   Int       @default(0)
+  creatorId   Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([brandCoopId])
+  @@index([status])
+  @@index([plannedDate])
+}
+
+model BrandCoopMessage {
+  id          Int       @id @default(autoincrement())
+  brandCoopId Int
+  brandCoop   BrandCoop @relation(fields: [brandCoopId], references: [id], onDelete: Cascade)
+  senderId    Int
+  sender      User      @relation(fields: [senderId], references: [id])
+  content     String
+  type        String    @default("TEXT")
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([brandCoopId])
+  @@index([senderId])
   @@index([createdAt])
 }

@@ -78,6 +78,12 @@ const routes = [
   { path: '/admin/asset-library', name: 'AdminAssetLibrary', component: () => import('@/views/AdminAssetLibrary.vue'), meta: { requiresAdmin: true } },
   { path: '/creator-revenue', name: 'CreatorRevenue', component: () => import('@/views/CreatorRevenue.vue'), meta: { requiresAuth: true } },
   { path: '/admin/finance', name: 'AdminFinance', component: () => import('@/views/AdminFinance.vue'), meta: { requiresAdmin: true } },
+  { path: '/brand-coops', name: 'BrandCoops', component: () => import('@/views/BrandCoops.vue') },
+  { path: '/brand-coops/new', name: 'NewBrandCoop', component: () => import('@/views/NewBrandCoop.vue'), meta: { requiresAuth: true } },
+  { path: '/brand-coops/:id/edit', name: 'EditBrandCoop', component: () => import('@/views/NewBrandCoop.vue'), meta: { requiresAuth: true } },
+  { path: '/brand-coops/:id', name: 'BrandCoopDetail', component: () => import('@/views/BrandCoopDetail.vue') },
+  { path: '/my-brand-coops', name: 'MyBrandCoops', component: () => import('@/views/MyBrandCoops.vue'), meta: { requiresAuth: true } },
+  { path: '/admin/brand-coops', name: 'AdminBrandCoops', component: () => import('@/views/AdminBrandCoops.vue'), meta: { requiresAdmin: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/views/NotFound.vue') }
 ]
 

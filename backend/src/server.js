@@ -57,6 +57,10 @@ const adminAssetLibraryRoutes = require('./routes/admin-asset-library');
 const revenueRoutes = require('./routes/revenue');
 const withdrawalRoutes = require('./routes/withdrawals');
 const adminFinanceRoutes = require('./routes/admin-finance');
+const brandCoopRoutes = require('./routes/brand-coops');
+const brandCoopScheduleRoutes = require('./routes/brand-coop-schedules');
+const brandCoopMessageRoutes = require('./routes/brand-coop-messages');
+const adminBrandCoopRoutes = require('./routes/admin-brand-coops');
 
 fastify.register(cors, {
   origin: true,
@@ -141,6 +145,10 @@ fastify.register(adminAssetLibraryRoutes, { prefix: '/api/admin/asset-library' }
 fastify.register(revenueRoutes, { prefix: '/api/revenue' });
 fastify.register(withdrawalRoutes, { prefix: '/api/withdrawals' });
 fastify.register(adminFinanceRoutes, { prefix: '/api/admin/finance' });
+fastify.register(brandCoopRoutes, { prefix: '/api/brand-coops' });
+fastify.register(brandCoopScheduleRoutes, { prefix: '/api/brand-coops/:id/schedules' });
+fastify.register(brandCoopMessageRoutes, { prefix: '/api/brand-coops/:id/messages' });
+fastify.register(adminBrandCoopRoutes, { prefix: '/api/admin/brand-coops' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };
