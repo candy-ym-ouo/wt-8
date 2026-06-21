@@ -94,6 +94,13 @@
             >
               🛡️ 查看举报详情
             </router-link>
+            <router-link
+              v-if="selected.type === 'CROWDFUNDING'"
+              :to="`/crowdfundings`"
+              class="btn btn-primary btn-sm"
+            >
+              🎯 查看众筹
+            </router-link>
             <button
               v-if="selected.type === 'USER' && selected.senderId !== authStore.user?.id"
               class="btn btn-secondary btn-sm"
@@ -190,6 +197,7 @@ const typeTabs = [
   { label: '全部', value: 'all' },
   { label: '系统通知', value: 'SYSTEM' },
   { label: '举报通知', value: 'REPORT' },
+  { label: '众筹消息', value: 'CROWDFUNDING' },
   { label: '合作消息', value: 'COLLABORATION' },
   { label: '活动消息', value: 'EVENT' },
   { label: '财务通知', value: 'FINANCE' },
@@ -311,6 +319,7 @@ const getTypeLabel = (type) => {
   const map = {
     SYSTEM: '系统通知',
     REPORT: '举报通知',
+    CROWDFUNDING: '众筹消息',
     COLLABORATION: '合作消息',
     EVENT: '活动消息',
     FINANCE: '财务通知',

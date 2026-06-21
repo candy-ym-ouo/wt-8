@@ -18,7 +18,6 @@
         <router-link to="/interviews" class="nav-link" active-class="active">作者访谈</router-link>
         <router-link to="/calendar" class="nav-link" active-class="active">创作日历</router-link>
         <router-link to="/reading" class="nav-link" active-class="active">阅读社区</router-link>
-        <router-link to="/asset-library" class="nav-link" active-class="active">素材资源库</router-link>
         <router-link to="/exclusive-zines" class="nav-link" active-class="active">专属刊物</router-link>
         <router-link to="/early-access" class="nav-link" active-class="active">提前阅读</router-link>
         <template v-if="authStore.isAuthenticated">
@@ -56,9 +55,6 @@
               <router-link to="/growth" class="menu-item">
                 <span>📈</span> 成长中心
               </router-link>
-              <router-link to="/creator-revenue" class="menu-item">
-                <span>💰</span> 创作收益
-              </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin" class="menu-item">
                 <span>⚙️</span> 后台管理
               </router-link>
@@ -94,12 +90,6 @@
               </router-link>
               <router-link v-if="authStore.isAdmin" to="/admin/reading" class="menu-item">
                 <span>📚</span> 阅读社区管理
-              </router-link>
-              <router-link v-if="authStore.isAdmin" to="/admin/asset-library" class="menu-item">
-                <span>🗂️</span> 素材资源库管理
-              </router-link>
-              <router-link v-if="authStore.isAdmin" to="/admin/finance" class="menu-item">
-                <span>💳</span> 财务管理
               </router-link>
               <div class="menu-divider"></div>
               <button class="menu-item menu-logout" @click="handleLogout">

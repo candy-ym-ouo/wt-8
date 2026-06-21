@@ -50,17 +50,6 @@ const readingReviewRoutes = require('./routes/reading-reviews');
 const adminReadingRoutes = require('./routes/admin-reading');
 const competitionRoutes = require('./routes/competitions');
 const adminCompetitionRoutes = require('./routes/admin-competitions');
-const copyrightLicenseRoutes = require('./routes/copyright-licenses');
-const adminCopyrightLicenseRoutes = require('./routes/admin-copyright-licenses');
-const assetLibraryRoutes = require('./routes/asset-library');
-const adminAssetLibraryRoutes = require('./routes/admin-asset-library');
-const revenueRoutes = require('./routes/revenue');
-const withdrawalRoutes = require('./routes/withdrawals');
-const adminFinanceRoutes = require('./routes/admin-finance');
-const brandCoopRoutes = require('./routes/brand-coops');
-const brandCoopScheduleRoutes = require('./routes/brand-coop-schedules');
-const brandCoopMessageRoutes = require('./routes/brand-coop-messages');
-const adminBrandCoopRoutes = require('./routes/admin-brand-coops');
 
 fastify.register(cors, {
   origin: true,
@@ -138,77 +127,15 @@ fastify.register(readingReviewRoutes, { prefix: '/api/reading-reviews' });
 fastify.register(adminReadingRoutes, { prefix: '/api/admin/reading' });
 fastify.register(competitionRoutes, { prefix: '/api/competitions' });
 fastify.register(adminCompetitionRoutes, { prefix: '/api/admin/competitions' });
-fastify.register(copyrightLicenseRoutes, { prefix: '/api/copyright-licenses' });
-fastify.register(adminCopyrightLicenseRoutes, { prefix: '/api/admin/copyright-licenses' });
-fastify.register(assetLibraryRoutes, { prefix: '/api/asset-library' });
-fastify.register(adminAssetLibraryRoutes, { prefix: '/api/admin/asset-library' });
-fastify.register(revenueRoutes, { prefix: '/api/revenue' });
-fastify.register(withdrawalRoutes, { prefix: '/api/withdrawals' });
-fastify.register(adminFinanceRoutes, { prefix: '/api/admin/finance' });
-fastify.register(brandCoopRoutes, { prefix: '/api/brand-coops' });
-fastify.register(brandCoopScheduleRoutes, { prefix: '/api/brand-coops/:id/schedules' });
-fastify.register(brandCoopMessageRoutes, { prefix: '/api/brand-coops/:id/messages' });
-fastify.register(adminBrandCoopRoutes, { prefix: '/api/admin/brand-coops' });
 
 fastify.get('/api/health', async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
-const processScheduledSubmissions = async () => {
-  try {
-    const now = new Date();
-    const scheduledSubs = await prisma.submission.findMany({
-      where: {
-        status: 'SCHEDULED',
-        scheduledAt: {
-          lte: now
-        }
-      }
-    });
-
-    for (const sub of scheduledSubs) {
-      await prisma.submission.update({
-        where: { id: sub.id },
-        data: {
-          status: 'PENDING',
-          scheduledAt: null
-        }
-      });
-
-      await prisma.message.create({
-        data: {
-          senderId: 1,
-          receiverId: sub.userId,
-          title: '定时投稿已进入审核队列',
-          content: `您的定时投稿《${sub.title}》已按预定时间进入审核队列，请耐心等待编辑审核。`,
-          type: 'SYSTEM'
-        }
-      });
-
-      const { triggerGrowthEvent } = require('./utils/growthTrigger');
-      await triggerGrowthEvent(prisma, sub.userId, 'SUBMISSION_CREATED', {
-        sourceId: sub.id
-      });
-    }
-
-    if (scheduledSubs.length > 0) {
-      console.log(`[定时任务] 已处理 ${scheduledSubs.length} 篇定时投稿`);
-    }
-  } catch (err) {
-    console.error('[定时任务] 处理定时投稿失败:', err);
-  }
-};
-
-const startScheduledTasks = () => {
-  setInterval(processScheduledSubmissions, 60 * 1000);
-  console.log('⏰ 定时任务已启动：每分钟检查定时投稿');
-};
-
 const start = async () => {
   try {
     await fastify.listen({ port: 3001, host: '0.0.0.0' });
     console.log('🚀 后端服务已启动: http://localhost:3001');
-    startScheduledTasks();
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

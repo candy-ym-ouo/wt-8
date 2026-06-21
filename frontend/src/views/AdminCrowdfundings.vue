@@ -242,6 +242,89 @@
       </div>
     </div>
 
+    <div v-if="currentTab === 'comments'" class="section">
+      <div class="flex justify-between items-center mb">
+        <div class="filter-tabs flex gap-sm">
+          <button
+            v-for="f in commentStatusFilters"
+            :key="f.value"
+            :class="['btn', commentStatusFilter === f.value ? 'btn-primary' : 'btn-secondary', 'btn-sm']"
+            @click="commentStatusFilter = f.value; loadComments(1)"
+          >
+            {{ f.label }}
+          </button>
+        </div>
+        <div class="search-box" style="width: 240px;">
+          <input
+            v-model="commentSearch"
+            type="text"
+            class="form-input"
+            placeholder="搜索评论内容..."
+            @input="debouncedCommentSearch"
+          >
+        </div>
+      </div>
+
+      <div v-if="loadingComments" class="empty-state"><div class="empty-state-icon">⏳</div></div>
+      <div v-else-if="adminComments.length === 0" class="empty-state card" style="padding: 48px;">
+        <div class="empty-state-icon">💬</div>
+        <div class="empty-state-text">暂无评论</div>
+      </div>
+      <div v-else class="admin-list card">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>评论者</th>
+              <th>众筹项目</th>
+              <th>内容</th>
+              <th>类型</th>
+              <th>点赞</th>
+              <th>状态</th>
+              <th>时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="c in adminComments" :key="c.id">
+              <td class="text-sm">#{{ c.id }}</td>
+              <td>
+                <div class="user-cell">
+                  <img :src="c.user?.avatar" alt="">
+                  <span>{{ c.user?.username }}</span>
+                </div>
+              </td>
+              <td class="text-sm">{{ c.crowdfunding?.title }}</td>
+              <td class="comment-cell">{{ c.content }}</td>
+              <td>
+                <span :class="['tag', c.parentId ? 'tag-reply' : 'tag-root']">
+                  {{ c.parentId ? '回复' : '评论' }}
+                </span>
+              </td>
+              <td class="text-sm">{{ c.likeCount || 0 }}</td>
+              <td>
+                <span :class="['badge', getCommentStatusBadge(c.status)]">
+                  {{ commentStatusLabel(c.status) }}
+                </span>
+              </td>
+              <td class="text-sm">{{ formatDateTime(c.createdAt) }}</td>
+              <td>
+                <button v-if="c.status !== 'APPROVED'" class="btn btn-primary btn-sm" @click="approveComment(c)">通过</button>
+                <button v-if="c.status !== 'HIDDEN'" class="btn btn-secondary btn-sm" @click="hideComment(c)">隐藏</button>
+                <button class="btn btn-ghost btn-sm danger-btn" @click="adminDeleteComment(c)">🗑</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="commentTotalPages > 1" class="pagination">
+        <button class="page-btn" :disabled="commentPage === 1" @click="loadComments(commentPage - 1)">←</button>
+        <span class="page-info">第 {{ commentPage }} / {{ commentTotalPages }} 页</span>
+        <button class="page-btn" :disabled="commentPage === commentTotalPages" @click="loadComments(commentPage + 1)">→</button>
+      </div>
+    </div>
+
     <div v-if="showOrderModal" class="modal-overlay" @click.self="showOrderModal = false">
       <div class="modal card" style="max-width: 500px;">
         <div class="modal-header">
@@ -338,7 +421,8 @@ const showToast = inject('showToast')
 const tabs = [
   { value: 'overview', label: '数据概览', icon: '📊' },
   { value: 'crowdfundings', label: '众筹项目', icon: '📖' },
-  { value: 'orders', label: '订单管理', icon: '📦' }
+  { value: 'orders', label: '订单管理', icon: '📦' },
+  { value: 'comments', label: '评论审核', icon: '💬' }
 ]
 
 const currentTab = ref('overview')
@@ -404,6 +488,20 @@ const shipping = ref(false)
 const shipTracking = ref('')
 let shippingOrder = null
 
+const adminComments = ref([])
+const loadingComments = ref(false)
+const commentStatusFilter = ref('all')
+const commentSearch = ref('')
+const commentPage = ref(1)
+const commentTotalPages = ref(0)
+
+const commentStatusFilters = [
+  { value: 'all', label: '全部' },
+  { value: 'APPROVED', label: '已通过' },
+  { value: 'HIDDEN', label: '已隐藏' },
+  { value: 'PENDING', label: '待审核' }
+]
+
 const formatMoney = (amount) => {
   if (!amount) return '0'
   return Number(amount).toLocaleString('zh-CN', { maximumFractionDigits: 0 })
@@ -460,6 +558,7 @@ const switchTab = (tab) => {
   if (tab === 'crowdfundings') loadCrowdfundings(1)
   if (tab === 'orders') loadOrders(1)
   if (tab === 'overview') loadStats()
+  if (tab === 'comments') loadComments(1)
 }
 
 const loadStats = async () => {
@@ -633,6 +732,70 @@ const refundOrder = async (order) => {
     loadOrders(orderPage.value)
   } catch (e) {
     showToast(e.error || '操作失败', 'error')
+  }
+}
+
+let commentSearchTimer = null
+const debouncedCommentSearch = () => {
+  clearTimeout(commentSearchTimer)
+  commentSearchTimer = setTimeout(() => loadComments(1), 400)
+}
+
+const loadComments = async (newPage = 1) => {
+  loadingComments.value = true
+  commentPage.value = newPage
+  try {
+    const params = new URLSearchParams({ page: newPage, limit: 20 })
+    if (commentStatusFilter.value !== 'all') params.set('status', commentStatusFilter.value)
+    if (commentSearch.value) params.set('keyword', commentSearch.value)
+    const res = await api.get(`/admin/crowdfunding-comments/comments?${params}`)
+    adminComments.value = res.comments
+    commentTotalPages.value = res.totalPages
+  } catch (e) {
+    showToast(e.error || '加载失败', 'error')
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const commentStatusLabel = (status) => {
+  const map = { APPROVED: '已通过', HIDDEN: '已隐藏', PENDING: '待审核' }
+  return map[status] || status
+}
+
+const getCommentStatusBadge = (status) => {
+  const map = { APPROVED: 'badge-green', HIDDEN: 'badge-red', PENDING: 'badge-orange' }
+  return map[status] || 'badge-gray'
+}
+
+const approveComment = async (c) => {
+  try {
+    await api.put(`/admin/crowdfunding-comments/comments/${c.id}/status`, { status: 'APPROVED' })
+    showToast('已通过', 'success')
+    loadComments(commentPage.value)
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
+const hideComment = async (c) => {
+  try {
+    await api.put(`/admin/crowdfunding-comments/comments/${c.id}/status`, { status: 'HIDDEN' })
+    showToast('已隐藏', 'success')
+    loadComments(commentPage.value)
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
+const adminDeleteComment = async (c) => {
+  if (!confirm('确定删除此评论吗？')) return
+  try {
+    await api.delete(`/admin/crowdfunding-comments/comments/${c.id}`)
+    showToast('已删除', 'success')
+    loadComments(commentPage.value)
+  } catch (e) {
+    showToast(e.error || '删除失败', 'error')
   }
 }
 
@@ -981,5 +1144,22 @@ onMounted(() => {
   font-weight: 400;
   color: var(--text-tertiary);
   font-size: 12px;
+}
+
+.comment-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-reply {
+  background: #f9f0ff;
+  color: #722ed1;
+}
+
+.tag-root {
+  background: #e6f7ff;
+  color: #1890ff;
 }
 </style>
