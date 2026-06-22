@@ -113,6 +113,16 @@
                   <span class="stat-value">{{ crowdfunding.viewCount }}</span>
                   <span class="stat-label">浏览</span>
                 </div>
+                <div class="stat-item">
+                  <button
+                    :class="['like-btn', { liked: crowdfunding.isLiked }]"
+                    @click="toggleProjectLike"
+                  >
+                    <span class="like-icon">{{ crowdfunding.isLiked ? '❤️' : '🤍' }}</span>
+                    <span class="like-count">{{ crowdfunding.likeCount || 0 }}</span>
+                  </button>
+                  <span class="stat-label">点赞</span>
+                </div>
               </div>
             </div>
           </div>
@@ -701,6 +711,21 @@ const toggleLike = async (comment, parentCommentId) => {
   }
 }
 
+const toggleProjectLike = async () => {
+  if (!authStore.isAuthenticated) {
+    showToast('请先登录', 'warning')
+    return
+  }
+  try {
+    const res = await api.post(`/crowdfundings/${crowdfunding.value.id}/like`)
+    crowdfunding.value.isLiked = res.liked
+    crowdfunding.value.likeCount = res.likeCount
+    showToast(res.message, res.liked ? 'success' : 'info')
+  } catch (e) {
+    showToast(e.error || '操作失败', 'error')
+  }
+}
+
 const togglePin = async (comment) => {
   try {
     await api.put(`/crowdfundings/${route.params.id}/comments/${comment.id}/pin`)
@@ -924,6 +949,39 @@ onMounted(() => {
 .stat-label {
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s;
+}
+.like-btn:hover {
+  transform: scale(1.1);
+}
+.like-btn.liked .like-icon {
+  animation: like-pop 0.3s ease;
+}
+.like-icon {
+  font-size: 20px;
+}
+.like-count {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.like-btn.liked .like-count {
+  color: #e84393;
+}
+@keyframes like-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 .detail-section { margin-top: 20px; }

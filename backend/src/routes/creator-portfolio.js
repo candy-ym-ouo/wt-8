@@ -42,11 +42,7 @@ async function routes(fastify, options) {
       publishedZinesCount,
       totalZineViews,
       totalZineLikes,
-      totalZineComments,
-      submissionsCount,
-      approvedSubmissionsCount,
-      followerCount,
-      subscriptionCount
+      followerCount
     ] = await Promise.all([
       prisma.zine.count({ where: { authorId: userId, status: 'PUBLISHED' } }),
       prisma.zine.aggregate({
@@ -57,30 +53,43 @@ async function routes(fastify, options) {
         where: { authorId: userId, status: 'PUBLISHED' },
         _sum: { likes: true }
       }).then(r => r._sum.likes || 0),
-      prisma.zine.aggregate({
-        where: { authorId: userId, status: 'PUBLISHED' },
-        _sum: { commentCount: true }
-      }).then(r => r._sum.commentCount || 0),
-      prisma.submission.count({ where: { userId } }),
-      prisma.submission.count({ where: { userId, status: 'APPROVED' } }),
-      prisma.authorSubscription.count({ where: { authorId: userId } }),
-      prisma.subscription.count({
-        where: { zine: { authorId: userId } }
-      })
+      prisma.authorSubscription.count({ where: { authorId: userId } })
     ]);
+
+    const stats = {
+      publishedZines: publishedZinesCount,
+      totalZineViews,
+      totalZineLikes,
+      followerCount
+    };
+
+    if (isOwner) {
+      const [
+        totalZineComments,
+        submissionsCount,
+        approvedSubmissionsCount,
+        subscriptionCount
+      ] = await Promise.all([
+        prisma.zine.aggregate({
+          where: { authorId: userId, status: 'PUBLISHED' },
+          _sum: { commentCount: true }
+        }).then(r => r._sum.commentCount || 0),
+        prisma.submission.count({ where: { userId } }),
+        prisma.submission.count({ where: { userId, status: 'APPROVED' } }),
+        prisma.subscription.count({
+          where: { zine: { authorId: userId } }
+        })
+      ]);
+
+      stats.totalZineComments = totalZineComments;
+      stats.totalSubmissions = submissionsCount;
+      stats.approvedSubmissions = approvedSubmissionsCount;
+      stats.subscriptionCount = subscriptionCount;
+    }
 
     return {
       user,
-      stats: {
-        publishedZines: publishedZinesCount,
-        totalZineViews,
-        totalZineLikes,
-        totalZineComments,
-        totalSubmissions: submissionsCount,
-        approvedSubmissions: approvedSubmissionsCount,
-        followerCount,
-        subscriptionCount
-      },
+      stats,
       isOwner
     };
   };
@@ -334,8 +343,12 @@ async function routes(fastify, options) {
     return result;
   });
 
-  fastify.get('/likes-stats/:userId', async (request, reply) => {
+  fastify.get('/likes-stats/:userId', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const userId = Number(request.params.userId);
+    if (request.user.id !== userId) {
+      return reply.code(403).send({ error: '无权查看他人获赞数据' });
+    }
+
     const { period = 'month' } = request.query;
 
     const result = await getLikesStats(userId, period);
@@ -347,8 +360,12 @@ async function routes(fastify, options) {
     return result;
   });
 
-  fastify.get('/subscriber-growth/:userId', async (request, reply) => {
+  fastify.get('/subscriber-growth/:userId', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const userId = Number(request.params.userId);
+    if (request.user.id !== userId) {
+      return reply.code(403).send({ error: '无权查看他人订阅增长数据' });
+    }
+
     const { period = 'month' } = request.query;
 
     const result = await getSubscriberGrowth(userId, period);

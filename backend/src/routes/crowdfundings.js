@@ -30,6 +30,50 @@ const formatTier = (t) => {
 async function routes(fastify, options) {
   const { prisma } = fastify;
 
+  const calculateHotScore = (cf) => {
+    const likeWeight = 3;
+    const commentWeight = 2;
+    const backerWeight = 1;
+    const viewWeight = 0.01;
+    const progressBonus = cf.targetAmount > 0 ? Math.min(cf.currentAmount / cf.targetAmount, 1) * 10 : 0;
+    const rawScore =
+      (cf.likeCount || 0) * likeWeight +
+      (cf.commentCount || 0) * commentWeight +
+      (cf.backerCount || 0) * backerWeight +
+      (cf.viewCount || 0) * viewWeight +
+      progressBonus;
+    const ageHours = (Date.now() - new Date(cf.createdAt).getTime()) / (1000 * 60 * 60);
+    const decayFactor = Math.pow(0.995, ageHours);
+    return Math.round(rawScore * decayFactor * 100) / 100;
+  };
+
+  const recalcHotScore = async (cfId) => {
+    const cf = await prisma.crowdfunding.findUnique({ where: { id: cfId } });
+    if (!cf) return;
+    const newScore = calculateHotScore(cf);
+    await prisma.crowdfunding.update({
+      where: { id: cfId },
+      data: { hotScore: newScore, hotScoreUpdatedAt: new Date() }
+    });
+    return newScore;
+  };
+
+  fastify.get('/hot-recalc', { preHandler: [fastify.adminOnly] }, async () => {
+    const crowdfundings = await prisma.crowdfunding.findMany({
+      where: { status: 'PUBLISHED' }
+    });
+    let updated = 0;
+    for (const cf of crowdfundings) {
+      const newScore = calculateHotScore(cf);
+      await prisma.crowdfunding.update({
+        where: { id: cf.id },
+        data: { hotScore: newScore, hotScoreUpdatedAt: new Date() }
+      });
+      updated++;
+    }
+    return { updated, message: `已重新计算 ${updated} 个项目的热度` };
+  });
+
   fastify.get('/', async (request) => {
     const { status, category, page = 1, limit = 20, keyword, sort = 'newest' } = request.query;
     const skip = (page - 1) * limit;
@@ -64,6 +108,12 @@ async function routes(fastify, options) {
         break;
       case 'most-backers':
         orderBy = { backerCount: 'desc' };
+        break;
+      case 'most-liked':
+        orderBy = { likeCount: 'desc' };
+        break;
+      case 'hottest':
+        orderBy = { hotScore: 'desc' };
         break;
       case 'ending-soon':
         orderBy = { deadline: 'asc' };
@@ -185,10 +235,25 @@ async function routes(fastify, options) {
       return reply.code(403).send({ error: '无权查看此众筹项目' });
     }
 
+    let isLiked = false;
+    if (user) {
+      const likeRecord = await prisma.crowdfundingLike.findUnique({
+        where: {
+          crowdfundingId_userId: {
+            crowdfundingId: crowdfundingData.id,
+            userId: user.id
+          }
+        }
+      });
+      isLiked = !!likeRecord;
+    }
+
     const crowdfunding = {
       ...formatCrowdfunding(crowdfundingData),
       tiers: crowdfundingData.tiers.map(formatTier),
-      orderCount: crowdfundingData._count.orders
+      orderCount: crowdfundingData._count.orders,
+      isLiked,
+      likeCount: crowdfundingData.likeCount
     };
 
     if (user && crowdfunding.status === 'PUBLISHED' && !isOwner && !isAdmin) {
@@ -197,6 +262,7 @@ async function routes(fastify, options) {
         data: { viewCount: { increment: 1 } }
       });
       crowdfunding.viewCount += 1;
+      await recalcHotScore(crowdfunding.id);
     }
 
     let userOrder = null;
@@ -581,6 +647,51 @@ async function routes(fastify, options) {
     }
 
     return { crowdfunding: formatCrowdfunding(updated), message: '已重新提交审核' };
+  });
+
+  fastify.post('/:id/like', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params;
+    const crowdfunding = await prisma.crowdfunding.findUnique({ where: { id: Number(id) } });
+
+    if (!crowdfunding) {
+      return reply.code(404).send({ error: '众筹项目不存在' });
+    }
+
+    if (crowdfunding.status !== 'PUBLISHED') {
+      return reply.code(400).send({ error: '只能对已发布的众筹项目点赞' });
+    }
+
+    const existing = await prisma.crowdfundingLike.findUnique({
+      where: {
+        crowdfundingId_userId: {
+          crowdfundingId: Number(id),
+          userId: request.user.id
+        }
+      }
+    });
+
+    if (existing) {
+      await prisma.crowdfundingLike.delete({ where: { id: existing.id } });
+      const updated = await prisma.crowdfunding.update({
+        where: { id: Number(id) },
+        data: { likeCount: { decrement: 1 } }
+      });
+      const newHotScore = await recalcHotScore(Number(id));
+      return { liked: false, likeCount: updated.likeCount, hotScore: newHotScore, message: '已取消点赞' };
+    }
+
+    await prisma.crowdfundingLike.create({
+      data: {
+        crowdfundingId: Number(id),
+        userId: request.user.id
+      }
+    });
+    const updated = await prisma.crowdfunding.update({
+      where: { id: Number(id) },
+      data: { likeCount: { increment: 1 } }
+    });
+    const newHotScore = await recalcHotScore(Number(id));
+    return { liked: true, likeCount: updated.likeCount, hotScore: newHotScore, message: '已点赞' };
   });
 }
 

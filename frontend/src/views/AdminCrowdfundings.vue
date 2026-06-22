@@ -67,6 +67,20 @@
             <div class="stat-label">总支持人数</div>
           </div>
         </div>
+        <div class="stat-card card">
+          <div class="stat-icon">❤️</div>
+          <div class="stat-info">
+            <div class="stat-value" style="color: #e84393;">{{ stats.totalLikes }}</div>
+            <div class="stat-label">总点赞数</div>
+          </div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-info">
+            <div class="stat-value" style="color: #e17055;">{{ stats.avgHotScore }}</div>
+            <div class="stat-label">平均热度</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -114,6 +128,8 @@
               <th>已筹金额</th>
               <th>进度</th>
               <th>支持者</th>
+              <th>❤️ 点赞</th>
+              <th>🔥 热度</th>
               <th>状态</th>
               <th>操作</th>
             </tr>
@@ -137,6 +153,8 @@
                 </div>
               </td>
               <td class="text-sm">{{ c.backerCount }}</td>
+              <td class="text-sm">{{ c.likeCount || 0 }}</td>
+              <td class="text-sm">{{ Math.round((c.hotScore || 0) * 100) / 100 }}</td>
               <td>
                 <span :class="['badge', getStatusBadgeClass(c.status)]">
                   {{ statusLabel(c.status) }}
@@ -434,6 +452,9 @@ const stats = ref({
   funded: 0,
   totalAmount: 0,
   totalBackers: 0,
+  totalLikes: 0,
+  avgHotScore: 0,
+  maxHotScore: 0,
   pendingOrders: 0
 })
 

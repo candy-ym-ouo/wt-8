@@ -110,9 +110,12 @@
               <img :src="item.creator?.avatar" alt="">
               <span>{{ item.creator?.username }}</span>
             </div>
-            <div v-if="item.deadline" class="deadline">
-              <span v-if="new Date(item.deadline) > new Date()">⏰ {{ getDaysLeft(item.deadline) }} 天</span>
-              <span v-else>已结束</span>
+            <div class="cf-meta-right">
+              <span v-if="item.likeCount" class="cf-likes">❤️ {{ item.likeCount }}</span>
+              <span v-if="item.deadline" class="deadline">
+                <span v-if="new Date(item.deadline) > new Date()">⏰ {{ getDaysLeft(item.deadline) }} 天</span>
+                <span v-else>已结束</span>
+              </span>
             </div>
           </div>
         </div>
@@ -175,6 +178,8 @@ const categories = ref([
 
 const sortOptions = [
   { id: 'newest', name: '最新发布' },
+  { id: 'hottest', name: '🔥 热度最高' },
+  { id: 'most-liked', name: '❤️ 最多点赞' },
   { id: 'most-funded', name: '筹款最多' },
   { id: 'most-backers', name: '支持最多' },
   { id: 'ending-soon', name: '即将结束' }
@@ -531,6 +536,17 @@ onMounted(() => {
 }
 
 .cf-creator span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cf-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cf-likes {
   font-size: 12px;
   color: var(--text-secondary);
 }

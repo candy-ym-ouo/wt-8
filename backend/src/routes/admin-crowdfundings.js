@@ -97,13 +97,24 @@ async function routes(fastify, options) {
       where: { status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] } }
     });
 
+    const totalLikes = await prisma.crowdfundingLike.count();
+
+    const hotStats = await prisma.crowdfunding.aggregate({
+      where: { status: 'PUBLISHED' },
+      _avg: { hotScore: true },
+      _max: { hotScore: true }
+    });
+
     return {
       total,
       published,
       pending,
       funded,
       totalAmount: totalAmount._sum.amount || 0,
-      totalBackers
+      totalBackers,
+      totalLikes,
+      avgHotScore: Math.round((hotStats._avg.hotScore || 0) * 100) / 100,
+      maxHotScore: Math.round((hotStats._max.hotScore || 0) * 100) / 100
     };
   });
 

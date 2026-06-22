@@ -26,7 +26,7 @@
           </div>
         </div>
 
-        <div class="stats-overview">
+        <div class="stats-overview" :class="{ 'stats-4': !isOwner }">
           <div class="stat-card card">
             <div class="stat-icon">📚</div>
             <div class="stat-content">
@@ -34,7 +34,7 @@
               <div class="stat-label">已发布刊物</div>
             </div>
           </div>
-          <div class="stat-card card">
+          <div v-if="isOwner" class="stat-card card">
             <div class="stat-icon">📝</div>
             <div class="stat-content">
               <div class="stat-number">{{ portfolioData?.overview?.stats?.approvedSubmissions || 0 }}</div>
@@ -62,7 +62,7 @@
               <div class="stat-label">关注者</div>
             </div>
           </div>
-          <div class="stat-card card">
+          <div v-if="isOwner" class="stat-card card">
             <div class="stat-icon">⭐</div>
             <div class="stat-content">
               <div class="stat-number">{{ portfolioData?.overview?.stats?.subscriptionCount || 0 }}</div>
@@ -73,7 +73,7 @@
 
         <div class="section-tabs">
           <button
-            v-for="t in tabs"
+            v-for="t in visibleTabs"
             :key="t.value"
             :class="['section-tab', { active: currentTab === t.value }]"
             @click="switchTab(t.value)"
@@ -348,12 +348,19 @@ const loading = ref(true)
 const portfolioData = ref(null)
 
 const tabs = [
-  { value: 'zines', label: '我的刊物', icon: '📚' },
-  { value: 'submissions', label: '投稿记录', icon: '📝' },
-  { value: 'likes', label: '获赞数据', icon: '❤️' },
-  { value: 'subscribers', label: '订阅增长', icon: '📈' }
+  { value: 'zines', label: '我的刊物', icon: '📚', private: false },
+  { value: 'submissions', label: '投稿记录', icon: '📝', private: true },
+  { value: 'likes', label: '获赞数据', icon: '❤️', private: true },
+  { value: 'subscribers', label: '订阅增长', icon: '📈', private: true }
 ]
 const currentTab = ref('zines')
+
+const isOwner = computed(() => portfolioData.value?.overview?.isOwner === true)
+
+const visibleTabs = computed(() => {
+  if (isOwner.value) return tabs
+  return tabs.filter(t => !t.private)
+})
 
 const zinesList = ref([])
 const zinePage = ref(1)
@@ -563,6 +570,9 @@ onMounted(async () => {
   grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 8px;
+}
+.stats-overview.stats-4 {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .stat-card {

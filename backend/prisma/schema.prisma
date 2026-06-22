@@ -47,6 +47,7 @@ model User {
   reviewedCrowdfundings                                Crowdfunding[]             @relation("CrowdfundingReviewer")
   CrowdfundingComment                                  CrowdfundingComment[]
   CrowdfundingCommentLike                              CrowdfundingCommentLike[]
+  CrowdfundingLike                                     CrowdfundingLike[]
   ZineComment                                          ZineComment[]
   ZineCommentLike                                      ZineCommentLike[]
   zineCommentReplies                                   ZineComment[]             @relation("ReplyToUser")
@@ -882,6 +883,9 @@ model Crowdfunding {
   sortOrder           Int                   @default(0)
   viewCount           Int                   @default(0)
   commentCount        Int                   @default(0)
+  likeCount           Int                   @default(0)
+  hotScore            Float                 @default(0)
+  hotScoreUpdatedAt   DateTime              @default(now())
   stockThreshold      Int                   @default(0)
   lowStockAlert       Boolean               @default(false)
   creatorId           Int
@@ -890,6 +894,7 @@ model Crowdfunding {
   creator             User                  @relation(fields: [creatorId], references: [id])
   reviewer            User?                 @relation("CrowdfundingReviewer", fields: [reviewerId], references: [id])
   CrowdfundingComment CrowdfundingComment[]
+  CrowdfundingLike    CrowdfundingLike[]
   orders              CrowdfundingOrder[]
   tiers               CrowdfundingTier[]
 }
@@ -1984,6 +1989,19 @@ model CrowdfundingCommentLike {
   @@unique([commentId, userId])
   @@index([userId])
   @@index([commentId])
+}
+
+model CrowdfundingLike {
+  id            Int          @id @default(autoincrement())
+  crowdfundingId Int
+  userId        Int
+  createdAt     DateTime     @default(now())
+  user          User         @relation(fields: [userId], references: [id])
+  crowdfunding  Crowdfunding @relation(fields: [crowdfundingId], references: [id], onDelete: Cascade)
+
+  @@unique([crowdfundingId, userId])
+  @@index([userId])
+  @@index([crowdfundingId])
 }
 
 model RevenueRecord {
