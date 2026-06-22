@@ -77,8 +77,11 @@
                 <button class="btn btn-ghost btn-sm" @click="showTierSwitch = false">收起</button>
               </div>
             </template>
-            <button class="btn btn-secondary btn-lg" @click="handleLike">
-              ❤ 收藏 ({{ zine.likes }})
+            <button
+              :class="['btn', zine.isLiked ? 'btn-primary' : 'btn-secondary', 'btn-lg']"
+              @click="handleLike"
+            >
+              {{ zine.isLiked ? '❤ 已收藏' : '🤍 收藏' }} ({{ zine.likes }})
             </button>
           </div>
 
@@ -352,8 +355,9 @@ const handleLike = async () => {
   }
   try {
     const res = await api.post(`/zines/${zine.value.id}/like`)
+    zine.value.isLiked = res.liked
     zine.value.likes = res.likes
-    showToast('已收藏 ❤', 'success')
+    showToast(res.message, res.liked ? 'success' : 'info')
   } catch (e) {
     showToast(e.error || '操作失败', 'error')
   }

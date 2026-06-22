@@ -16,6 +16,46 @@ async function routes(fastify, options) {
     return { ...zine, tags: parseJSONField(zine.tags, []) };
   };
 
+  const calculateHotScore = (z) => {
+    const likeWeight = 3;
+    const commentWeight = 2;
+    const viewWeight = 0.01;
+    const rawScore =
+      (z.likes || 0) * likeWeight +
+      (z.commentCount || 0) * commentWeight +
+      (z.views || 0) * viewWeight;
+    const ageHours = (Date.now() - new Date(z.createdAt).getTime()) / (1000 * 60 * 60);
+    const decayFactor = Math.pow(0.995, ageHours);
+    return Math.round(rawScore * decayFactor * 100) / 100;
+  };
+
+  const recalcHotScore = async (zineId) => {
+    const z = await prisma.zine.findUnique({ where: { id: zineId } });
+    if (!z) return;
+    const newScore = calculateHotScore(z);
+    await prisma.zine.update({
+      where: { id: zineId },
+      data: { hotScore: newScore, hotScoreUpdatedAt: new Date() }
+    });
+    return newScore;
+  };
+
+  fastify.get('/hot-recalc', { preHandler: [fastify.adminOnly] }, async () => {
+    const zines = await prisma.zine.findMany({
+      where: { status: 'PUBLISHED' }
+    });
+    let updated = 0;
+    for (const z of zines) {
+      const newScore = calculateHotScore(z);
+      await prisma.zine.update({
+        where: { id: z.id },
+        data: { hotScore: newScore, hotScoreUpdatedAt: new Date() }
+      });
+      updated++;
+    }
+    return { updated, message: `已重新计算 ${updated} 个刊物的热度` };
+  });
+
   fastify.get('/', async (request) => {
     const {
       category, search, page = 1, limit = 12, sort = 'newest',
@@ -45,6 +85,7 @@ async function routes(fastify, options) {
     let orderBy = { createdAt: 'desc' };
     if (sort === 'popular') orderBy = { views: 'desc' };
     if (sort === 'liked') orderBy = { likes: 'desc' };
+    if (sort === 'hottest') orderBy = { hotScore: 'desc' };
     if (sort === 'recently-updated') orderBy = { updatedAt: 'desc' };
     if (sort === 'oldest') orderBy = { createdAt: 'asc' };
 
@@ -135,12 +176,35 @@ async function routes(fastify, options) {
       return reply.code(404).send({ error: '刊物不存在' });
     }
 
+    let user = null;
+    try {
+      const decoded = await request.jwtVerify();
+      if (decoded && decoded.id) {
+        user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      }
+    } catch (e) {}
+
+    let isLiked = false;
+    if (user) {
+      const likeRecord = await prisma.zineLike.findUnique({
+        where: {
+          zineId_userId: {
+            zineId: zineData.id,
+            userId: user.id
+          }
+        }
+      });
+      isLiked = !!likeRecord;
+    }
+
     const updated = await prisma.zine.update({
       where: { id: zineData.id },
       data: { views: zineData.views + 1 }
     });
 
-    const zine = formatZine({ ...zineData, views: updated.views });
+    await recalcHotScore(zineData.id);
+
+    const zine = formatZine({ ...zineData, views: updated.views, isLiked });
     return { zine };
   });
 
@@ -153,12 +217,41 @@ async function routes(fastify, options) {
       return reply.code(404).send({ error: '刊物不存在' });
     }
 
-    const updated = await prisma.zine.update({
-      where: { id: zine.id },
-      data: { likes: zine.likes + 1 }
+    if (zine.status !== 'PUBLISHED') {
+      return reply.code(400).send({ error: '只能对已发布的刊物点赞' });
+    }
+
+    const existing = await prisma.zineLike.findUnique({
+      where: {
+        zineId_userId: {
+          zineId: zine.id,
+          userId: request.user.id
+        }
+      }
     });
 
-    return { likes: updated.likes };
+    if (existing) {
+      await prisma.zineLike.delete({ where: { id: existing.id } });
+      const updated = await prisma.zine.update({
+        where: { id: zine.id },
+        data: { likes: { decrement: 1 } }
+      });
+      const newHotScore = await recalcHotScore(zine.id);
+      return { liked: false, likes: updated.likes, hotScore: newHotScore, message: '已取消收藏' };
+    }
+
+    await prisma.zineLike.create({
+      data: {
+        zineId: zine.id,
+        userId: request.user.id
+      }
+    });
+    const updated = await prisma.zine.update({
+      where: { id: zine.id },
+      data: { likes: { increment: 1 } }
+    });
+    const newHotScore = await recalcHotScore(zine.id);
+    return { liked: true, likes: updated.likes, hotScore: newHotScore, message: '已收藏' };
   });
 }
 

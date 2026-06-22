@@ -34,6 +34,7 @@
         <span class="filter-label" style="margin-left: 24px;">排序</span>
         <select v-model="filters.sort" class="form-select sort-select" @change="fetchZines(1)">
           <option value="newest">最新发布</option>
+          <option value="hottest">🔥 热度最高</option>
           <option value="popular">最多浏览</option>
           <option value="liked">最受欢迎</option>
           <option value="recently-updated">最近更新</option>
